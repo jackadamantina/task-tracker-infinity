@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { DndContext, DragEndEvent, DragOverEvent, closestCorners } from '@dnd-kit/core';
 import { KanbanHeader } from "@/components/kanban/KanbanHeader";
 import { DroppableKanbanColumn } from "@/components/kanban/DroppableKanbanColumn";
 import { CardEditModal } from "@/components/kanban/CardEditModal";
+import { AddCardModal } from "@/components/kanban/AddCardModal";
 import { 
   getCardsByColumn, 
   getCardsByProject,
@@ -24,10 +26,15 @@ export default function Kanban() {
   const [cards, setCards] = useState<Card[]>(mockCards);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showCardModal, setShowCardModal] = useState(false);
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [selectedColumnForNewCard, setSelectedColumnForNewCard] = useState<string>("");
   const [filterOverdue, setFilterOverdue] = useState(false);
   const [filterPerson, setFilterPerson] = useState("");
   const [filterTeam, setFilterTeam] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  // Simulação de permissões de usuário (em produção, viria de autenticação)
+  const [userRole] = useState<'admin' | 'user'>('admin'); // Para demonstração, definindo como admin
 
   // Função para calcular tempo gasto automaticamente
   useEffect(() => {
@@ -44,7 +51,7 @@ export default function Kanban() {
       );
     };
 
-    const interval = setInterval(updateTimeSpent, 60000); // Atualiza a cada minuto
+    const interval = setInterval(updateTimeSpent, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -62,6 +69,19 @@ export default function Kanban() {
     }
   };
 
+  const handleAddCard = (columnId: string) => {
+    setSelectedColumnForNewCard(columnId);
+    setShowAddCardModal(true);
+  };
+
+  const handleCreateCard = (newCardData: Omit<Card, 'id'>) => {
+    const newCard: Card = {
+      ...newCardData,
+      id: Date.now() // Em produção, seria gerado pelo backend
+    };
+    setCards(prevCards => [...prevCards, newCard]);
+  };
+
   const handleCardDoubleClick = (card: Card) => {
     setSelectedCard(card);
     setShowCardModal(true);
@@ -75,6 +95,21 @@ export default function Kanban() {
     );
   };
 
+  const canMoveCard = (card: Card, targetColumn: string): boolean => {
+    // Administradores podem mover qualquer card para qualquer coluna
+    if (userRole === 'admin') {
+      return true;
+    }
+    
+    // Usuários normais seguem as regras de negócio padrão
+    const columnOrder = ["todo", "in-progress", "review", "done"];
+    const currentIndex = columnOrder.indexOf(card.column);
+    const targetIndex = columnOrder.indexOf(targetColumn);
+    
+    // Permite mover apenas para a próxima coluna ou voltar uma coluna
+    return Math.abs(targetIndex - currentIndex) <= 1;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -85,26 +120,33 @@ export default function Kanban() {
 
     // Se o drop foi sobre uma coluna
     if (columns.some(col => col.id === overId)) {
-      setCards(prevCards => 
-        prevCards.map(card => {
-          if (card.id === activeId) {
-            const updatedCard = { ...card, column: overId };
-            
-            // Se moveu para "em andamento", define startTime
-            if (overId === 'in-progress' && !card.startTime) {
-              updatedCard.startTime = new Date();
+      const cardToMove = cards.find(card => card.id === activeId);
+      
+      if (cardToMove && canMoveCard(cardToMove, overId)) {
+        setCards(prevCards => 
+          prevCards.map(card => {
+            if (card.id === activeId) {
+              const updatedCard = { ...card, column: overId };
+              
+              // Se moveu para "em andamento", define startTime
+              if (overId === 'in-progress' && !card.startTime) {
+                updatedCard.startTime = new Date();
+              }
+              
+              // Se moveu para "concluído", define completedTime
+              if (overId === 'done' && !card.completedTime) {
+                updatedCard.completedTime = new Date();
+              }
+              
+              return updatedCard;
             }
-            
-            // Se moveu para "concluído", define completedTime
-            if (overId === 'done' && !card.completedTime) {
-              updatedCard.completedTime = new Date();
-            }
-            
-            return updatedCard;
-          }
-          return card;
-        })
-      );
+            return card;
+          })
+        );
+      } else if (cardToMove && !canMoveCard(cardToMove, overId)) {
+        // Exibir mensagem de erro para usuários sem permissão
+        console.log("Movimento não permitido para este usuário");
+      }
     }
   };
 
@@ -118,13 +160,17 @@ export default function Kanban() {
 
     // Se estamos arrastando sobre uma coluna
     if (typeof overId === 'string' && columns.some(col => col.id === overId)) {
-      setCards(prevCards => 
-        prevCards.map(card => 
-          card.id === activeId 
-            ? { ...card, column: overId }
-            : card
-        )
-      );
+      const cardToMove = cards.find(card => card.id === activeId);
+      
+      if (cardToMove && canMoveCard(cardToMove, overId)) {
+        setCards(prevCards => 
+          prevCards.map(card => 
+            card.id === activeId 
+              ? { ...card, column: overId }
+              : card
+          )
+        );
+      }
     }
   };
 
@@ -156,8 +202,29 @@ export default function Kanban() {
     );
   }
 
+  // Encontrar o projeto selecionado para exibir o nome
+  const currentProject = mockProjects.find(project => project.id === selectedProject);
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Nome do projeto em destaque */}
+      <div className="bg-white rounded-lg border p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Projeto: {currentProject?.name || 'Projeto não encontrado'}
+          </h2>
+          {userRole === 'admin' && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
+              Administrador
+            </span>
+          )}
+        </div>
+        <p className="text-gray-600 mt-1 text-sm">
+          {currentProject?.description || 'Descrição não disponível'}
+        </p>
+      </div>
+
       <KanbanHeader
         selectedProject={selectedProject}
         setSelectedProject={setSelectedProject}
@@ -191,6 +258,7 @@ export default function Kanban() {
               column={column}
               cards={getCardsByColumn(filteredCards, column.id)}
               onCardDoubleClick={handleCardDoubleClick}
+              onAddCard={handleAddCard}
             />
           ))}
         </div>
@@ -204,6 +272,17 @@ export default function Kanban() {
           setSelectedCard(null);
         }}
         onSave={handleCardSave}
+      />
+
+      <AddCardModal
+        isOpen={showAddCardModal}
+        onClose={() => {
+          setShowAddCardModal(false);
+          setSelectedColumnForNewCard("");
+        }}
+        onSave={handleCreateCard}
+        columnId={selectedColumnForNewCard}
+        projectId={selectedProject}
       />
     </div>
   );

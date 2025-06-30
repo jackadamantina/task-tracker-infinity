@@ -9,14 +9,10 @@ interface KanbanColumnProps {
   column: Column;
   cardsCount: number;
   children: React.ReactNode;
+  onAddCard: () => void;
 }
 
-export function KanbanColumn({ column, cardsCount, children }: KanbanColumnProps) {
-  const handleAddCard = () => {
-    // Função para adicionar novo card - implementar depois
-    console.log("Adicionar novo card para coluna:", column.id);
-  };
-
+export function KanbanColumn({ column, cardsCount, children, onAddCard }: KanbanColumnProps) {
   return (
     <div className={`h-full flex flex-col ${column.color} border rounded-lg`}>
       <CardHeader className={`${column.headerColor} rounded-t-lg border-b flex-shrink-0`}>
@@ -30,8 +26,9 @@ export function KanbanColumn({ column, cardsCount, children }: KanbanColumnProps
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddCard}
+            onClick={onAddCard}
             className="h-6 w-6 p-0 hover:bg-gray-200"
+            title="Adicionar novo card"
           >
             <Plus className="h-3 w-3" />
           </Button>
