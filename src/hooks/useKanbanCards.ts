@@ -8,34 +8,49 @@ export function useKanbanCards() {
   const { cards: supabaseCards, createCard, updateCard, deleteCard } = useSupabaseKanban();
   const [cards, setCards] = useState<Card[]>([]);
   const [columnMapping, setColumnMapping] = useState<{[key: string]: string}>({});
+  const [reverseColumnMapping, setReverseColumnMapping] = useState<{[key: string]: string}>({});
 
   // Buscar mapeamento de colunas
   useEffect(() => {
     const fetchColumnMapping = async () => {
       try {
         const { data: columns } = await supabase.from('kanban_columns').select('id, title');
+        console.log('Colunas do banco:', columns);
+        
         if (columns) {
           const mapping: {[key: string]: string} = {};
+          const reverseMapping: {[key: string]: string} = {};
+          
           columns.forEach(col => {
-            switch(col.title.toLowerCase()) {
+            const normalizedTitle = col.title.toLowerCase().trim();
+            console.log('Processando coluna:', col.title, 'normalizada:', normalizedTitle);
+            
+            switch(normalizedTitle) {
               case 'backlog':
                 mapping[col.id] = 'todo';
+                reverseMapping['todo'] = col.id;
                 break;
               case 'em progresso':
                 mapping[col.id] = 'in-progress';
+                reverseMapping['in-progress'] = col.id;
                 break;
               case 'em revisão':
                 mapping[col.id] = 'review';
+                reverseMapping['review'] = col.id;
                 break;
               case 'concluído':
                 mapping[col.id] = 'done';
+                reverseMapping['done'] = col.id;
                 break;
               default:
                 mapping[col.id] = 'todo';
             }
           });
+          
           setColumnMapping(mapping);
+          setReverseColumnMapping(reverseMapping);
           console.log('Column mapping loaded:', mapping);
+          console.log('Reverse column mapping:', reverseMapping);
         }
       } catch (error) {
         console.error('Erro ao buscar mapeamento de colunas:', error);
@@ -49,64 +64,64 @@ export function useKanbanCards() {
   useEffect(() => {
     if (Object.keys(columnMapping).length === 0) return; // Esperar o mapeamento ser carregado
 
-    const convertedCards: Card[] = supabaseCards.map((card) => ({
-      id: parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Date.now(),
-      title: card.title,
-      description: card.description || "",
-      column: columnMapping[card.column_id || ''] || 'todo',
-      priority: card.priority,
-      assignee: {
-        name: card.assignee?.name || "Não atribuído",
-        avatar: card.assignee?.avatar || "/placeholder.svg"
-      },
-      attachments: card.attachments,
-      subtasks: {
-        completed: card.subtasks_completed,
-        total: card.subtasks_total
-      },
-      dependencies: card.dependencies.map(dep => parseInt(dep.replace(/-/g, '').substring(0, 8), 16)).filter(Boolean),
-      blocked: false,
-      timeSpent: card.time_spent,
-      tags: card.tags,
-      startTime: card.start_time ? new Date(card.start_time) : undefined,
-      completedTime: undefined,
-      executionTime: 0,
-      estimatedCompletionDate: card.estimated_completion_date ? new Date(card.estimated_completion_date) : undefined,
-      projectId: card.project_id || 'sistema-ecommerce'
-    }));
+    const convertedCards: Card[] = supabaseCards.map((card) => {
+      // Gerar ID numérico baseado no UUID
+      const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
+      
+      return {
+        id: numericId,
+        title: card.title,
+        description: card.description || "",
+        column: columnMapping[card.column_id || ''] || 'todo',
+        priority: card.priority,
+        assignee: {
+          name: card.assignee?.name || "Não atribuído",
+          avatar: card.assignee?.avatar || "/placeholder.svg"
+        },
+        attachments: card.attachments,
+        subtasks: {
+          completed: card.subtasks_completed,
+          total: card.subtasks_total
+        },
+        dependencies: card.dependencies.map(dep => parseInt(dep.replace(/-/g, '').substring(0, 8), 16)).filter(Boolean),
+        blocked: false,
+        timeSpent: card.time_spent,
+        tags: card.tags,
+        startTime: card.start_time ? new Date(card.start_time) : undefined,
+        completedTime: undefined,
+        executionTime: 0,
+        estimatedCompletionDate: card.estimated_completion_date ? new Date(card.estimated_completion_date) : undefined,
+        projectId: card.project_id || 'default-project'
+      };
+    });
     
     console.log('Cards convertidos:', convertedCards);
     setCards(convertedCards);
   }, [supabaseCards, columnMapping]);
 
-  const getColumnId = async (columnKey: string): Promise<string> => {
-    const { data: columns } = await supabase.from('kanban_columns').select('id, title');
-    if (!columns) return '';
-    
-    const columnTitleMap: { [key: string]: string } = {
-      'todo': 'Backlog',
-      'in-progress': 'Em Progresso',
-      'review': 'Em Revisão',
-      'done': 'Concluído'
-    };
-    
-    const targetTitle = columnTitleMap[columnKey];
-    const column = columns.find(col => col.title === targetTitle);
-    return column?.id || '';
-  };
-
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
       console.log('Criando card:', newCardData);
       
-      const columnId = await getColumnId(newCardData.column);
+      // Buscar ID da coluna usando o mapeamento reverso
+      const columnId = reverseColumnMapping[newCardData.column];
+      
+      if (!columnId) {
+        console.error('Coluna não encontrada:', newCardData.column);
+        throw new Error(`Coluna não encontrada: ${newCardData.column}`);
+      }
+      
       console.log('Column ID encontrada:', columnId);
+      
+      // Buscar um projeto válido
+      const { data: projects } = await supabase.from('projects').select('id').limit(1);
+      const projectId = projects && projects.length > 0 ? projects[0].id : null;
       
       const supabaseCardData = {
         title: newCardData.title,
         description: newCardData.description,
         column_id: columnId,
-        project_id: newCardData.projectId,
+        project_id: projectId,
         assignee_id: null,
         priority: newCardData.priority,
         tags: newCardData.tags || [],
@@ -129,7 +144,12 @@ export function useKanbanCards() {
 
   const handleCardSave = async (updatedCard: Card) => {
     try {
-      const columnId = await getColumnId(updatedCard.column);
+      const columnId = reverseColumnMapping[updatedCard.column];
+      
+      if (!columnId) {
+        console.error('Coluna não encontrada para update:', updatedCard.column);
+        return;
+      }
       
       const supabaseUpdates = {
         title: updatedCard.title,
@@ -143,7 +163,15 @@ export function useKanbanCards() {
         estimated_completion_date: updatedCard.estimatedCompletionDate?.toISOString() || null
       };
 
-      await updateCard(updatedCard.id.toString(), supabaseUpdates);
+      // Buscar o UUID original do card
+      const originalCard = supabaseCards.find(card => {
+        const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16);
+        return numericId === updatedCard.id;
+      });
+
+      if (originalCard) {
+        await updateCard(originalCard.id, supabaseUpdates);
+      }
     } catch (error) {
       console.error('Erro ao salvar card:', error);
     }
@@ -151,7 +179,15 @@ export function useKanbanCards() {
 
   const handleCardDelete = async (cardId: number) => {
     try {
-      await deleteCard(cardId.toString());
+      // Buscar o UUID original do card
+      const originalCard = supabaseCards.find(card => {
+        const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16);
+        return numericId === cardId;
+      });
+
+      if (originalCard) {
+        await deleteCard(originalCard.id);
+      }
     } catch (error) {
       console.error('Erro ao deletar card:', error);
     }

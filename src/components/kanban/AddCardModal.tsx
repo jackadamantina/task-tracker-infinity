@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -40,29 +39,36 @@ export function AddCardModal({ isOpen, onClose, onSave, columnId, projectId }: A
     { name: "Carlos Lima", avatar: "/placeholder.svg" }
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title.trim()) return;
 
-    const selectedAssignee = mockTeamMembers.find(member => member.name === formData.assignee) || mockTeamMembers[0];
+    try {
+      const selectedAssignee = mockTeamMembers.find(member => member.name === formData.assignee) || mockTeamMembers[0];
 
-    const newCard: Omit<Card, 'id'> = {
-      title: formData.title,
-      description: formData.description,
-      column: columnId,
-      priority: formData.priority,
-      assignee: selectedAssignee,
-      attachments: 0,
-      subtasks: { completed: 0, total: 0 },
-      dependencies: [],
-      blocked: false,
-      timeSpent: 0,
-      tags: formData.tags,
-      estimatedCompletionDate: formData.estimatedCompletionDate,
-      projectId: projectId
-    };
+      console.log('Criando card com columnId:', columnId);
 
-    onSave(newCard);
-    handleClose();
+      const newCard: Omit<Card, 'id'> = {
+        title: formData.title,
+        description: formData.description,
+        column: columnId, // Usar o columnId diretamente
+        priority: formData.priority,
+        assignee: selectedAssignee,
+        attachments: 0,
+        subtasks: { completed: 0, total: 0 },
+        dependencies: [],
+        blocked: false,
+        timeSpent: 0,
+        tags: formData.tags,
+        estimatedCompletionDate: formData.estimatedCompletionDate,
+        projectId: projectId
+      };
+
+      console.log('Dados do novo card:', newCard);
+      await onSave(newCard);
+      handleClose();
+    } catch (error) {
+      console.error('Erro ao salvar card no modal:', error);
+    }
   };
 
   const handleClose = () => {
