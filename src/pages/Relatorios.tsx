@@ -4,54 +4,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Download, Filter, TrendingUp, Clock, Users, CheckCircle } from "lucide-react";
+import { Calendar, Download, Filter, TrendingUp, Clock, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { mockProjects, mockCards, getProjectTimeline, getProjectProgress, type Project } from "@/utils/kanbanUtils";
 
 export default function Relatorios() {
   const [selectedProject, setSelectedProject] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("month");
 
-  // Mock data - em produção viria de uma API
   const projects = [
     { id: "all", name: "Todos os Projetos" },
-    { id: "1", name: "Sistema E-commerce" },
-    { id: "2", name: "App Mobile" },
-    { id: "3", name: "Dashboard Analytics" }
-  ];
-
-  const ganttData = [
-    {
-      id: 1,
-      project: "Sistema E-commerce",
-      tasks: [
-        { name: "Planejamento", start: "2024-01-01", end: "2024-01-15", progress: 100, status: "Concluído" },
-        { name: "Desenvolvimento", start: "2024-01-16", end: "2024-03-15", progress: 75, status: "Em Andamento" },
-        { name: "Testes", start: "2024-03-01", end: "2024-03-30", progress: 25, status: "Aguardando" },
-        { name: "Deploy", start: "2024-03-25", end: "2024-04-05", progress: 0, status: "Não Iniciado" }
-      ]
-    },
-    {
-      id: 2,
-      project: "App Mobile",
-      tasks: [
-        { name: "Design UI/UX", start: "2024-01-15", end: "2024-02-15", progress: 90, status: "Quase Concluído" },
-        { name: "Desenvolvimento", start: "2024-02-01", end: "2024-04-01", progress: 45, status: "Em Andamento" },
-        { name: "Testes", start: "2024-03-15", end: "2024-04-15", progress: 0, status: "Não Iniciado" }
-      ]
-    }
+    ...mockProjects.map(p => ({ id: p.id, name: p.name }))
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Concluído": return "bg-green-100 text-green-800";
-      case "Em Andamento": return "bg-blue-100 text-blue-800";
-      case "Quase Concluído": return "bg-yellow-100 text-yellow-800";
-      case "Aguardando": return "bg-orange-100 text-orange-800";
-      case "Não Iniciado": return "bg-gray-100 text-gray-800";
+      case "done": return "bg-green-100 text-green-800";
+      case "review": return "bg-yellow-100 text-yellow-800";
+      case "in-progress": return "bg-blue-100 text-blue-800";
+      case "todo": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getProgressBarColor = (progress: number) => {
+  const getProgressBarColor = (progress: number, isOverdue: boolean = false) => {
+    if (isOverdue) return "bg-red-500";
     if (progress === 100) return "bg-green-500";
     if (progress >= 75) return "bg-blue-500";
     if (progress >= 50) return "bg-yellow-500";
@@ -59,12 +35,37 @@ export default function Relatorios() {
     return "bg-gray-300";
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', { 
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('pt-BR', { 
       day: '2-digit', 
       month: 'short' 
     });
   };
+
+  const formatExecutionTime = (hours: number): string => {
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
+  };
+
+  const getFilteredProjects = () => {
+    if (selectedProject === "all") {
+      return mockProjects;
+    }
+    return mockProjects.filter(p => p.id === selectedProject);
+  };
+
+  const getProjectsTimeline = () => {
+    return getFilteredProjects().map(project => ({
+      id: project.id,
+      project: project.name,
+      tasks: getProjectTimeline(project.id, mockCards)
+    }));
+  };
+
+  const projectsTimeline = getProjectsTimeline();
 
   return (
     <div className="p-6 space-y-6">
@@ -115,19 +116,26 @@ export default function Relatorios() {
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">+1 novo projeto</p>
+            <div className="text-2xl font-bold">{mockProjects.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {mockProjects.filter(p => p.status === 'in-progress').length} em andamento
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Tarefas Atrasadas</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45d</div>
-            <p className="text-xs text-muted-foreground">Por projeto</p>
+            <div className="text-2xl font-bold text-red-600">
+              {mockCards.filter(card => {
+                if (!card.estimatedCompletionDate) return false;
+                return new Date() > card.estimatedCompletionDate && card.column !== 'done';
+              }).length}
+            </div>
+            <p className="text-xs text-muted-foreground">Requerem atenção</p>
           </CardContent>
         </Card>
 
@@ -137,19 +145,25 @@ export default function Relatorios() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78%</div>
-            <p className="text-xs text-muted-foreground">+5% este mês</p>
+            <div className="text-2xl font-bold">
+              {Math.round((mockCards.filter(c => c.column === 'done').length / mockCards.length) * 100)}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {mockCards.filter(c => c.column === 'done').length} de {mockCards.length} tarefas
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Equipe Total</CardTitle>
-            <Users className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">10</div>
-            <p className="text-xs text-muted-foreground">Membros ativos</p>
+            <div className="text-2xl font-bold">
+              {Math.round(mockCards.reduce((acc, card) => acc + (card.executionTime || 0), 0) / mockCards.length)}h
+            </div>
+            <p className="text-xs text-muted-foreground">Por tarefa</p>
           </CardContent>
         </Card>
       </div>
@@ -162,48 +176,79 @@ export default function Relatorios() {
             Timeline dos Projetos - Gráfico de Gantt
           </CardTitle>
           <CardDescription>
-            Visualize o cronograma e dependências dos seus projetos
+            Visualize o cronograma, tempo gasto e dependências dos seus projetos
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
-            {ganttData.map((projectData) => (
+            {projectsTimeline.map((projectData) => (
               <div key={projectData.id} className="space-y-3">
-                <h3 className="font-semibold text-lg text-gray-900">{projectData.project}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg text-gray-900">{projectData.project}</h3>
+                  <Badge className="bg-blue-100 text-blue-800">
+                    {getProjectProgress(projectData.id, mockCards)}% concluído
+                  </Badge>
+                </div>
                 
                 <div className="space-y-3">
                   {projectData.tasks.map((task, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-4 items-center py-2">
-                      {/* Nome da tarefa */}
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">{task.name}</span>
-                          <Badge className={`${getStatusColor(task.status)} text-xs`}>
-                            {task.status}
-                          </Badge>
+                    <div key={index} className="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-100 last:border-b-0">
+                      {/* Nome da tarefa e informações */}
+                      <div className="col-span-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">{task.title}</span>
+                            <Badge className={`${getStatusColor(task.status)} text-xs`}>
+                              {task.status === 'done' ? 'Concluído' :
+                               task.status === 'review' ? 'Em Revisão' :
+                               task.status === 'in-progress' ? 'Em Andamento' : 'A Fazer'}
+                            </Badge>
+                            {task.isOverdue && (
+                              <Badge className="bg-red-100 text-red-800 text-xs">
+                                Atrasado
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Responsável: {task.assignee}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>Tempo gasto: {task.timeSpent}h</span>
+                            {task.executionTime > 0 && (
+                              <span>Duração: {formatExecutionTime(task.executionTime)}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Timeline visual */}
-                      <div className="col-span-7">
-                        <div className="relative h-6 bg-gray-100 rounded-md overflow-hidden">
+                      <div className="col-span-6">
+                        <div className="relative h-8 bg-gray-100 rounded-md overflow-hidden">
                           <div 
-                            className={`h-full rounded-md ${getProgressBarColor(task.progress)} transition-all duration-300`}
+                            className={`h-full rounded-md ${getProgressBarColor(task.progress, task.isOverdue)} transition-all duration-300 flex items-center justify-center`}
                             style={{ width: `${task.progress}%` }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-700">
+                          >
+                            <span className="text-xs font-medium text-white">
                               {task.progress}%
                             </span>
                           </div>
+                          {task.isOverdue && (
+                            <div className="absolute top-0 right-0 h-full w-2 bg-red-600"></div>
+                          )}
                         </div>
                       </div>
 
                       {/* Datas */}
                       <div className="col-span-2 text-right">
-                        <div className="text-xs text-gray-600">
-                          <div>{formatDate(task.start)}</div>
-                          <div>{formatDate(task.end)}</div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div className="font-medium">
+                            {formatDate(task.startDate)} - {formatDate(task.estimatedEndDate)}
+                          </div>
+                          {task.actualEndDate && (
+                            <div className="text-green-600">
+                              Concluído: {formatDate(task.actualEndDate)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -225,10 +270,10 @@ export default function Relatorios() {
           <CardContent>
             <div className="space-y-3">
               {[
-                { status: "Concluído", count: 12, color: "bg-green-500" },
-                { status: "Em Andamento", count: 8, color: "bg-blue-500" },
-                { status: "Aguardando", count: 4, color: "bg-orange-500" },
-                { status: "Não Iniciado", count: 6, color: "bg-gray-400" }
+                { status: "Concluído", count: mockCards.filter(c => c.column === 'done').length, color: "bg-green-500" },
+                { status: "Em Andamento", count: mockCards.filter(c => c.column === 'in-progress').length, color: "bg-blue-500" },
+                { status: "Em Revisão", count: mockCards.filter(c => c.column === 'review').length, color: "bg-yellow-500" },
+                { status: "A Fazer", count: mockCards.filter(c => c.column === 'todo').length, color: "bg-gray-400" }
               ].map((item) => (
                 <div key={item.status} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -252,7 +297,7 @@ export default function Relatorios() {
               {[
                 { phase: "Planejamento", time: "5 dias", color: "bg-purple-500" },
                 { phase: "Desenvolvimento", time: "22 dias", color: "bg-blue-500" },
-                { phase: "Testes", time: "8 dias", color: "bg-yellow-500" },
+                { phase: "Revisão", time: "8 dias", color: "bg-yellow-500" },
                 { phase: "Deploy", time: "3 dias", color: "bg-green-500" }
               ].map((item) => (
                 <div key={item.phase} className="flex items-center justify-between">

@@ -6,15 +6,18 @@ import { DroppableKanbanColumn } from "@/components/kanban/DroppableKanbanColumn
 import { CardEditModal } from "@/components/kanban/CardEditModal";
 import { 
   getCardsByColumn, 
+  getCardsByProject,
+  getOverdueCards,
   mockProjects, 
   defaultColumns, 
   mockCards,
   type Column,
-  type Card
+  type Card,
+  type Project
 } from "@/utils/kanbanUtils";
 
 export default function Kanban() {
-  const [selectedProject, setSelectedProject] = useState("Sistema E-commerce");
+  const [selectedProject, setSelectedProject] = useState(mockProjects[0].id);
   const [showColumnDialog, setShowColumnDialog] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
@@ -22,6 +25,7 @@ export default function Kanban() {
   const [cards, setCards] = useState<Card[]>(mockCards);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showCardModal, setShowCardModal] = useState(false);
+  const [filterOverdue, setFilterOverdue] = useState(false);
 
   const handleAddColumn = () => {
     if (newColumnName.trim()) {
@@ -90,6 +94,12 @@ export default function Kanban() {
     }
   };
 
+  // Filtrar cards por projeto
+  const projectCards = getCardsByProject(cards, selectedProject);
+  
+  // Aplicar filtro de atrasados se ativo
+  const filteredCards = filterOverdue ? getOverdueCards(projectCards) : projectCards;
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <KanbanHeader
@@ -103,6 +113,8 @@ export default function Kanban() {
         newColumnName={newColumnName}
         setNewColumnName={setNewColumnName}
         handleAddColumn={handleAddColumn}
+        filterOverdue={filterOverdue}
+        setFilterOverdue={setFilterOverdue}
       />
 
       <DndContext 
@@ -115,7 +127,7 @@ export default function Kanban() {
             <DroppableKanbanColumn
               key={column.id}
               column={column}
-              cards={getCardsByColumn(cards, column.id)}
+              cards={getCardsByColumn(filteredCards, column.id)}
               onCardDoubleClick={handleCardDoubleClick}
             />
           ))}

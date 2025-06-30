@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Paperclip, Clock, ArrowRight, AlertTriangle, Timer } from "lucide-react";
+import { Paperclip, Clock, ArrowRight, AlertTriangle, Timer, Calendar, AlertCircle } from "lucide-react";
+import { isCardOverdue } from "@/utils/kanbanUtils";
 
 interface KanbanCardProps {
   card: {
@@ -19,6 +20,8 @@ interface KanbanCardProps {
     timeSpent: number;
     tags?: string[];
     executionTime?: number;
+    estimatedCompletionDate?: Date;
+    projectId: string;
   };
   onDoubleClick?: () => void;
 }
@@ -44,9 +47,21 @@ export function KanbanCard({ card, onDoubleClick }: KanbanCardProps) {
     return `${days}d ${remainingHours}h`;
   };
 
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit' 
+    });
+  };
+
+  const isOverdue = isCardOverdue(card);
+
   return (
     <Card 
-      className="cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-200 hover:border-gray-300"
+      className={`cursor-pointer hover:shadow-md transition-all duration-200 bg-white border ${
+        isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
+      } hover:border-gray-300`}
       onDoubleClick={onDoubleClick}
     >
       <CardContent className="p-4">
@@ -57,17 +72,39 @@ export function KanbanCard({ card, onDoubleClick }: KanbanCardProps) {
               <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1">
                 {card.title}
               </h4>
-              {card.blocked && (
-                <div className="flex items-center gap-1 mt-1">
-                  <AlertTriangle className="h-3 w-3 text-red-500" />
-                  <span className="text-xs text-red-600 font-medium">Bloqueado</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 mt-1">
+                {card.blocked && (
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-red-500" />
+                    <span className="text-xs text-red-600 font-medium">Bloqueado</span>
+                  </div>
+                )}
+                {isOverdue && (
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 text-red-500" />
+                    <span className="text-xs text-red-600 font-medium">Atrasado</span>
+                  </div>
+                )}
+              </div>
             </div>
             <Badge className={`${getPriorityColor(card.priority)} text-xs font-medium border`}>
               {card.priority}
             </Badge>
           </div>
+
+          {/* Data de conclusão estimada */}
+          {card.estimatedCompletionDate && (
+            <div className={`flex items-center gap-2 p-2 rounded-md border ${
+              isOverdue ? 'bg-red-100 border-red-200' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <Calendar className={`h-3 w-3 ${isOverdue ? 'text-red-600' : 'text-blue-600'}`} />
+              <span className={`text-xs font-medium ${
+                isOverdue ? 'text-red-700' : 'text-blue-700'
+              }`}>
+                Previsão: {formatDate(card.estimatedCompletionDate)}
+              </span>
+            </div>
+          )}
 
           {/* Tags */}
           {card.tags && card.tags.length > 0 && (
