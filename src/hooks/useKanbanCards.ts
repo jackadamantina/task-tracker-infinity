@@ -62,17 +62,29 @@ export function useKanbanCards() {
 
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
-    if (Object.keys(columnMapping).length === 0) return; // Esperar o mapeamento ser carregado
+    console.log('=== EFEITO DE CONVERSÃO ===');
+    console.log('supabaseCards:', supabaseCards);
+    console.log('columnMapping:', columnMapping);
+    
+    if (Object.keys(columnMapping).length === 0) {
+      console.log('Aguardando mapeamento de colunas...');
+      return;
+    }
 
     const convertedCards: Card[] = supabaseCards.map((card) => {
+      console.log('Convertendo card:', card.id, card.title);
+      
       // Gerar ID numérico baseado no UUID
       const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
+      
+      const mappedColumn = columnMapping[card.column_id || ''] || 'todo';
+      console.log('Card column_id:', card.column_id, 'mapeado para:', mappedColumn);
       
       return {
         id: numericId,
         title: card.title,
         description: card.description || "",
-        column: columnMapping[card.column_id || ''] || 'todo',
+        column: mappedColumn,
         priority: card.priority,
         assignee: {
           name: card.assignee?.name || "Não atribuído",
@@ -95,27 +107,29 @@ export function useKanbanCards() {
       };
     });
     
-    console.log('Cards convertidos:', convertedCards);
+    console.log('Cards convertidos final:', convertedCards);
     setCards(convertedCards);
   }, [supabaseCards, columnMapping]);
 
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
-      console.log('Criando card:', newCardData);
+      console.log('=== CRIANDO CARD ===');
+      console.log('Dados recebidos:', newCardData);
       
       // Buscar ID da coluna usando o mapeamento reverso
       const columnId = reverseColumnMapping[newCardData.column];
+      console.log('Column mapeada:', newCardData.column, 'para UUID:', columnId);
       
       if (!columnId) {
         console.error('Coluna não encontrada:', newCardData.column);
+        console.error('Mapeamento disponível:', reverseColumnMapping);
         throw new Error(`Coluna não encontrada: ${newCardData.column}`);
       }
-      
-      console.log('Column ID encontrada:', columnId);
       
       // Buscar um projeto válido
       const { data: projects } = await supabase.from('projects').select('id').limit(1);
       const projectId = projects && projects.length > 0 ? projects[0].id : null;
+      console.log('Projeto selecionado:', projectId);
       
       const supabaseCardData = {
         title: newCardData.title,
@@ -135,11 +149,15 @@ export function useKanbanCards() {
       };
 
       console.log('Dados para Supabase:', supabaseCardData);
-      await createCard(supabaseCardData);
+      const createdCard = await createCard(supabaseCardData);
+      console.log('Card criado:', createdCard);
       
-      // Forçar uma nova busca dos dados para garantir que o card aparece
-      console.log('Recarregando dados após criação...');
-      await refetch();
+      // Aguardar um pouco e recarregar os dados
+      console.log('Aguardando e recarregando...');
+      setTimeout(async () => {
+        await refetch();
+        console.log('Refetch concluído');
+      }, 500);
       
     } catch (error) {
       console.error('Erro ao criar card:', error);

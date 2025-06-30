@@ -46,12 +46,14 @@ export function AddCardModal({ isOpen, onClose, onSave, columnId, projectId }: A
     try {
       const selectedAssignee = mockTeamMembers.find(member => member.name === formData.assignee) || mockTeamMembers[0];
 
-      console.log('Criando card com columnId:', columnId);
+      console.log('=== MODAL: CRIANDO CARD ===');
+      console.log('Column ID recebido:', columnId);
+      console.log('Project ID recebido:', projectId);
 
       const newCard: Omit<Card, 'id'> = {
         title: formData.title,
         description: formData.description,
-        column: columnId,
+        column: columnId, // Este deve ser o ID da coluna como 'todo', 'in-progress', etc.
         priority: formData.priority,
         assignee: selectedAssignee,
         attachments: 0,
@@ -67,7 +69,7 @@ export function AddCardModal({ isOpen, onClose, onSave, columnId, projectId }: A
         executionTime: 0
       };
 
-      console.log('Dados do novo card:', newCard);
+      console.log('Dados do novo card no modal:', newCard);
       await onSave(newCard);
       handleClose();
     } catch (error) {
