@@ -10,36 +10,14 @@ export function useKanbanCards() {
 
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
-    console.log('=== USEKANBAN CARDS: CONVERSÃO INICIADA ===');
-    console.log('Supabase cards recebidos:', supabaseCards.length);
+    console.log('Converting Supabase cards to frontend format:', supabaseCards.length);
     
-    if (supabaseCards.length === 0) {
-      console.log('Nenhum card do Supabase, definindo array vazio');
-      setCards([]);
-      return;
-    }
-
     const convertedCards: Card[] = supabaseCards.map((supabaseCard) => {
-      console.log('Convertendo card:', supabaseCard.id, supabaseCard.title);
-      console.log('Column ID do Supabase:', supabaseCard.column_id);
-      
       // Converter UUID para ID numérico
       const numericId = parseInt(supabaseCard.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
       
       // Mapear column_id para o formato esperado
       let columnName = 'todo'; // default
-      
-      // Usar uma query simples para buscar o título da coluna
-      supabase
-        .from('kanban_columns')
-        .select('title')
-        .eq('id', supabaseCard.column_id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            console.log('Título da coluna encontrado:', data.title);
-          }
-        });
       
       // Mapeamento direto baseado nos IDs conhecidos das colunas
       if (supabaseCard.column_id === 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0') {
@@ -51,8 +29,6 @@ export function useKanbanCards() {
       } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174003') {
         columnName = 'done';
       }
-      
-      console.log('Card mapeado para coluna:', columnName);
       
       const convertedCard: Card = {
         id: numericId,
@@ -80,25 +56,16 @@ export function useKanbanCards() {
         projectId: supabaseCard.project_id || 'sistema-ecommerce'
       };
       
-      console.log('Card convertido:', convertedCard);
       return convertedCard;
     });
     
-    console.log('=== RESULTADO FINAL DA CONVERSÃO ===');
-    console.log('Total de cards convertidos:', convertedCards.length);
-    console.log('Cards por coluna:');
-    console.log('- todo:', convertedCards.filter(c => c.column === 'todo').length);
-    console.log('- in-progress:', convertedCards.filter(c => c.column === 'in-progress').length);
-    console.log('- review:', convertedCards.filter(c => c.column === 'review').length);
-    console.log('- done:', convertedCards.filter(c => c.column === 'done').length);
-    
+    console.log('Cards converted:', convertedCards.length);
     setCards(convertedCards);
   }, [supabaseCards]);
 
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
-      console.log('=== CRIANDO NOVO CARD ===');
-      console.log('Dados recebidos:', newCardData);
+      console.log('Creating new card:', newCardData.title);
       
       // Mapear coluna para UUID
       let columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0'; // default para 'todo'
@@ -117,8 +84,6 @@ export function useKanbanCards() {
           columnId = '123e4567-e89b-12d3-a456-426614174003';
           break;
       }
-      
-      console.log('Column mapeada:', newCardData.column, 'para UUID:', columnId);
       
       // Buscar um projeto válido
       const { data: projects } = await supabase.from('projects').select('id').limit(1);
@@ -141,15 +106,11 @@ export function useKanbanCards() {
         start_time: newCardData.startTime?.toISOString() || null
       };
 
-      console.log('Enviando para Supabase:', supabaseCardData);
-      
       await createCard(supabaseCardData);
-      
-      console.log('Card criado com sucesso, fazendo refetch...');
-      await refetch();
+      console.log('Card created successfully');
       
     } catch (error) {
-      console.error('Erro ao criar card:', error);
+      console.error('Error creating card:', error);
       throw error;
     }
   };
@@ -196,7 +157,7 @@ export function useKanbanCards() {
         await updateCard(originalCard.id, supabaseUpdates);
       }
     } catch (error) {
-      console.error('Erro ao salvar card:', error);
+      console.error('Error saving card:', error);
     }
   };
 
@@ -212,7 +173,7 @@ export function useKanbanCards() {
         await deleteCard(originalCard.id);
       }
     } catch (error) {
-      console.error('Erro ao deletar card:', error);
+      console.error('Error deleting card:', error);
     }
   };
 

@@ -11,17 +11,10 @@ interface KanbanGridProps {
 
 export function KanbanGrid({ columns, filteredCards, onCardDoubleClick, onAddCard }: KanbanGridProps) {
   const getCardsByColumn = (cards: Card[], columnId: string): Card[] => {
-    const cardsInColumn = cards.filter(card => card.column === columnId);
-    console.log(`Cards na coluna ${columnId}:`, cardsInColumn.length, cardsInColumn.map(c => c.title));
-    return cardsInColumn;
+    return cards.filter(card => card.column === columnId);
   };
 
-  console.log('=== KANBAN GRID RENDER ===');
-  console.log('Total de cards recebidos:', filteredCards.length);
-  columns.forEach(col => {
-    const cardsInColumn = getCardsByColumn(filteredCards, col.id);
-    console.log(`Coluna ${col.id} (${col.title}): ${cardsInColumn.length} cards`);
-  });
+  console.log('KanbanGrid render - Total cards:', filteredCards.length);
 
   return (
     <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(300px, 1fr))` }}>

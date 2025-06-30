@@ -49,45 +49,41 @@ export function useSupabaseKanban() {
 
   const fetchColumns = async () => {
     try {
-      console.log('=== BUSCANDO COLUNAS ===');
       const { data, error } = await supabase
         .from('kanban_columns')
         .select('*')
         .order('position');
 
       if (error) {
-        console.error('Erro ao buscar colunas:', error);
+        console.error('Error fetching columns:', error);
         throw error;
       }
-      console.log('Colunas carregadas:', data);
       setColumns(data || []);
     } catch (error) {
-      console.error('Erro ao buscar colunas:', error);
+      console.error('Error fetching columns:', error);
     }
   };
 
   const fetchProjects = async () => {
     try {
-      console.log('=== BUSCANDO PROJETOS ===');
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('name');
 
       if (error) {
-        console.error('Erro ao buscar projetos:', error);
+        console.error('Error fetching projects:', error);
         throw error;
       }
-      console.log('Projetos carregados:', data);
       setProjects(data || []);
     } catch (error) {
-      console.error('Erro ao buscar projetos:', error);
+      console.error('Error fetching projects:', error);
     }
   };
 
   const fetchCards = async () => {
     try {
-      console.log('=== INICIANDO BUSCA DE CARDS NO SUPABASE ===');
+      console.log('Fetching cards from Supabase...');
       setLoading(true);
       
       const { data, error } = await supabase
@@ -99,39 +95,25 @@ export function useSupabaseKanban() {
         `)
         .order('created_at');
 
-      console.log('=== RESULTADO DA QUERY SUPABASE ===');
-      console.log('Data recebida:', data);
-      console.log('Error:', error);
-
       if (error) {
-        console.error('Erro na query:', error);
+        console.error('Error fetching cards:', error);
         throw error;
       }
       
-      const formattedCards = data?.map(card => {
-        console.log('Formatando card do Supabase:', card.id, card.title, 'coluna:', card.column_id);
-        return {
-          ...card,
-          assignee: card.system_users ? {
-            name: card.system_users.name,
-            avatar: card.system_users.avatar || "/placeholder.svg"
-          } : undefined,
-          project: card.projects
-        };
-      }) || [];
+      const formattedCards = data?.map(card => ({
+        ...card,
+        assignee: card.system_users ? {
+          name: card.system_users.name,
+          avatar: card.system_users.avatar || "/placeholder.svg"
+        } : undefined,
+        project: card.projects
+      })) || [];
       
-      console.log('=== CARDS FORMATADOS DO SUPABASE ===');
-      console.log('Total de cards formatados:', formattedCards.length);
-      formattedCards.forEach(card => {
-        console.log(`Card: ${card.title} | Coluna UUID: ${card.column_id} | Projeto: ${card.project_id}`);
-      });
-      
+      console.log('Cards fetched successfully:', formattedCards.length);
       setCards(formattedCards);
-      console.log('=== CARDS SALVOS NO STATE ===');
       
     } catch (error) {
-      console.error('=== ERRO AO BUSCAR CARDS ===');
-      console.error('Erro:', error);
+      console.error('Error fetching cards:', error);
     } finally {
       setLoading(false);
     }
@@ -139,8 +121,7 @@ export function useSupabaseKanban() {
 
   const createCard = async (cardData: Omit<KanbanCard, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('=== CRIANDO CARD NO SUPABASE ===');
-      console.log('Dados recebidos:', cardData);
+      console.log('Creating card in Supabase:', cardData.title);
       
       const { data, error } = await supabase
         .from('kanban_cards')
@@ -153,13 +134,9 @@ export function useSupabaseKanban() {
         .single();
 
       if (error) {
-        console.error('=== ERRO SQL AO CRIAR CARD ===');
-        console.error('Erro:', error);
+        console.error('Error creating card:', error);
         throw error;
       }
-
-      console.log('=== CARD CRIADO COM SUCESSO NO SUPABASE ===');
-      console.log('Card retornado:', data);
 
       const formattedCard = {
         ...data,
@@ -170,13 +147,7 @@ export function useSupabaseKanban() {
         project: data.projects
       };
 
-      console.log('=== ADICIONANDO CARD AO STATE LOCAL ===');
-      setCards(prev => {
-        const newCards = [...prev, formattedCard];
-        console.log('Total de cards após adição:', newCards.length);
-        console.log('Cards no state:', newCards.map(c => ({ id: c.id, title: c.title, column: c.column_id })));
-        return newCards;
-      });
+      setCards(prev => [...prev, formattedCard]);
       
       toast({
         title: "Sucesso",
@@ -185,8 +156,7 @@ export function useSupabaseKanban() {
       
       return formattedCard;
     } catch (error) {
-      console.error('=== ERRO AO CRIAR CARD ===');
-      console.error('Erro:', error);
+      console.error('Error creating card:', error);
       toast({
         title: "Erro",
         description: "Erro ao criar card",
@@ -226,7 +196,7 @@ export function useSupabaseKanban() {
 
       return formattedCard;
     } catch (error) {
-      console.error('Erro ao atualizar card:', error);
+      console.error('Error updating card:', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar card",
@@ -252,7 +222,7 @@ export function useSupabaseKanban() {
         description: "Card deletado com sucesso",
       });
     } catch (error) {
-      console.error('Erro ao deletar card:', error);
+      console.error('Error deleting card:', error);
       toast({
         title: "Erro",
         description: "Erro ao deletar card",
@@ -264,13 +234,12 @@ export function useSupabaseKanban() {
 
   useEffect(() => {
     const initializeData = async () => {
-      console.log('=== INICIALIZANDO DADOS DO SUPABASE ===');
+      console.log('Initializing Supabase data...');
       await Promise.all([
         fetchColumns(),
         fetchProjects(),
         fetchCards()
       ]);
-      console.log('=== INICIALIZAÇÃO CONCLUÍDA ===');
     };
 
     initializeData();
