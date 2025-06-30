@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Usuarios from "./pages/Usuarios";
 import Kanban from "./pages/Kanban";
 import Relatorios from "./pages/Relatorios";
+import Config from "./pages/Config";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
                   <Route path="/usuarios" element={<Usuarios />} />
                   <Route path="/kanban" element={<Kanban />} />
                   <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/config" element={<Config />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
