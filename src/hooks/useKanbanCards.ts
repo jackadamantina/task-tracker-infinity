@@ -63,16 +63,18 @@ export function useKanbanCards() {
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
     console.log('=== EFEITO DE CONVERSÃO ===');
-    console.log('supabaseCards:', supabaseCards);
-    console.log('columnMapping:', columnMapping);
+    console.log('supabaseCards length:', supabaseCards.length);
+    console.log('columnMapping keys:', Object.keys(columnMapping).length);
     
     if (Object.keys(columnMapping).length === 0) {
       console.log('Aguardando mapeamento de colunas...');
       return;
     }
 
+    console.log('Convertendo', supabaseCards.length, 'cards...');
+    
     const convertedCards: Card[] = supabaseCards.map((card) => {
-      console.log('Convertendo card:', card.id, card.title);
+      console.log('Convertendo card:', card.id, card.title, 'coluna:', card.column_id);
       
       // Gerar ID numérico baseado no UUID
       const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
@@ -107,13 +109,21 @@ export function useKanbanCards() {
       };
     });
     
-    console.log('Cards convertidos final:', convertedCards);
+    console.log('=== RESULTADO DA CONVERSÃO ===');
+    console.log('Cards convertidos:', convertedCards.length);
+    console.log('Cards por coluna:', {
+      todo: convertedCards.filter(c => c.column === 'todo').length,
+      'in-progress': convertedCards.filter(c => c.column === 'in-progress').length,
+      review: convertedCards.filter(c => c.column === 'review').length,
+      done: convertedCards.filter(c => c.column === 'done').length
+    });
+    
     setCards(convertedCards);
   }, [supabaseCards, columnMapping]);
 
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
-      console.log('=== CRIANDO CARD ===');
+      console.log('=== INICIANDO CRIAÇÃO DE CARD ===');
       console.log('Dados recebidos:', newCardData);
       
       // Buscar ID da coluna usando o mapeamento reverso
@@ -148,19 +158,21 @@ export function useKanbanCards() {
         start_time: newCardData.startTime?.toISOString() || null
       };
 
+      console.log('=== ENVIANDO PARA SUPABASE ===');
       console.log('Dados para Supabase:', supabaseCardData);
+      
       const createdCard = await createCard(supabaseCardData);
+      console.log('=== CARD CRIADO NO BANCO ===');
       console.log('Card criado:', createdCard);
       
-      // Aguardar um pouco e recarregar os dados
-      console.log('Aguardando e recarregando...');
-      setTimeout(async () => {
-        await refetch();
-        console.log('Refetch concluído');
-      }, 500);
+      // Forçar recarregamento imediato dos dados
+      console.log('=== FORÇANDO REFETCH ===');
+      await refetch();
+      console.log('=== REFETCH CONCLUÍDO ===');
       
     } catch (error) {
-      console.error('Erro ao criar card:', error);
+      console.error('=== ERRO AO CRIAR CARD ===');
+      console.error('Erro:', error);
       throw error;
     }
   };
