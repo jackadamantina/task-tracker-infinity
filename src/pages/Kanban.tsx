@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
-import { DndContext, DragEndEvent, DragOverEvent, closestCorners } from '@dnd-kit/core';
+
+import { useState } from "react";
 import { KanbanHeader } from "@/components/kanban/KanbanHeader";
-import { DroppableKanbanColumn } from "@/components/kanban/DroppableKanbanColumn";
+import { ProjectHeader } from "@/components/kanban/ProjectHeader";
+import { KanbanContainer } from "@/components/kanban/KanbanContainer";
 import { CardEditModal } from "@/components/kanban/CardEditModal";
 import { AddCardModal } from "@/components/kanban/AddCardModal";
+import { useKanbanCards } from "@/hooks/useKanbanCards";
+import { useKanbanFilters } from "@/hooks/useKanbanFilters";
 import { 
-  getCardsByColumn, 
-  getCardsByProject,
-  getOverdueCards,
   mockProjects, 
   defaultColumns, 
-  mockCards,
   type Column,
-  type Card,
-  type Project
+  type Card
 } from "@/utils/kanbanUtils";
 
 export default function Kanban() {
@@ -22,7 +20,6 @@ export default function Kanban() {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
-  const [cards, setCards] = useState<Card[]>(mockCards);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showAddCardModal, setShowAddCardModal] = useState(false);
@@ -35,24 +32,22 @@ export default function Kanban() {
   // Simulação de permissões de usuário (em produção, viria de autenticação)
   const [userRole] = useState<'admin' | 'user'>('admin'); // Para demonstração, definindo como admin
 
-  // Função para calcular tempo gasto automaticamente
-  useEffect(() => {
-    const updateTimeSpent = () => {
-      setCards(prevCards => 
-        prevCards.map(card => {
-          if (card.column === 'in-progress' && card.startTime) {
-            const now = new Date();
-            const hoursSpent = Math.floor((now.getTime() - card.startTime.getTime()) / (1000 * 60 * 60));
-            return { ...card, timeSpent: hoursSpent };
-          }
-          return card;
-        })
-      );
-    };
+  const { 
+    cards, 
+    setCards, 
+    handleCreateCard, 
+    handleCardSave, 
+    handleCardDelete 
+  } = useKanbanCards();
 
-    const interval = setInterval(updateTimeSpent, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const filteredCards = useKanbanFilters(
+    cards,
+    selectedProject,
+    filterOverdue,
+    filterPerson,
+    filterTeam,
+    filterStatus
+  );
 
   const handleAddColumn = () => {
     if (newColumnName.trim()) {
@@ -73,161 +68,20 @@ export default function Kanban() {
     setShowAddCardModal(true);
   };
 
-  const handleCreateCard = (newCardData: Omit<Card, 'id'>) => {
-    const newCard: Card = {
-      ...newCardData,
-      id: Date.now() // Em produção, seria gerado pelo backend
-    };
-    setCards(prevCards => [...prevCards, newCard]);
-  };
-
   const handleCardDoubleClick = (card: Card) => {
     setSelectedCard(card);
     setShowCardModal(true);
   };
-
-  const handleCardSave = (updatedCard: Card) => {
-    setCards(prevCards => 
-      prevCards.map(card => 
-        card.id === updatedCard.id ? updatedCard : card
-      )
-    );
-  };
-
-  const handleCardDelete = (cardId: number) => {
-    setCards(prevCards => prevCards.filter(card => card.id !== cardId));
-    console.log(`Card ${cardId} deletado pelo administrador`);
-  };
-
-  const canMoveCard = (card: Card, targetColumn: string): boolean => {
-    // Administradores podem mover qualquer card para qualquer coluna
-    if (userRole === 'admin') {
-      return true;
-    }
-    
-    // Usuários normais seguem as regras de negócio padrão
-    const columnOrder = ["todo", "in-progress", "review", "done"];
-    const currentIndex = columnOrder.indexOf(card.column);
-    const targetIndex = columnOrder.indexOf(targetColumn);
-    
-    // Permite mover apenas para a próxima coluna ou voltar uma coluna
-    return Math.abs(targetIndex - currentIndex) <= 1;
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = active.id as number;
-    const overId = over.id as string;
-
-    // Se o drop foi sobre uma coluna
-    if (columns.some(col => col.id === overId)) {
-      const cardToMove = cards.find(card => card.id === activeId);
-      
-      if (cardToMove && canMoveCard(cardToMove, overId)) {
-        setCards(prevCards => 
-          prevCards.map(card => {
-            if (card.id === activeId) {
-              const updatedCard = { ...card, column: overId };
-              
-              // Se moveu para "em andamento", define startTime
-              if (overId === 'in-progress' && !card.startTime) {
-                updatedCard.startTime = new Date();
-              }
-              
-              // Se moveu para "concluído", define completedTime
-              if (overId === 'done' && !card.completedTime) {
-                updatedCard.completedTime = new Date();
-              }
-              
-              return updatedCard;
-            }
-            return card;
-          })
-        );
-      } else if (cardToMove && !canMoveCard(cardToMove, overId)) {
-        // Exibir mensagem de erro para usuários sem permissão
-        console.log("Movimento não permitido para este usuário");
-      }
-    }
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = active.id as number;
-    const overId = over.id;
-
-    // Se estamos arrastando sobre uma coluna
-    if (typeof overId === 'string' && columns.some(col => col.id === overId)) {
-      const cardToMove = cards.find(card => card.id === activeId);
-      
-      if (cardToMove && canMoveCard(cardToMove, overId)) {
-        setCards(prevCards => 
-          prevCards.map(card => 
-            card.id === activeId 
-              ? { ...card, column: overId }
-              : card
-          )
-        );
-      }
-    }
-  };
-
-  // Filtrar cards por projeto
-  const projectCards = getCardsByProject(cards, selectedProject);
-  
-  // Aplicar filtros
-  let filteredCards = projectCards;
-
-  if (filterOverdue) {
-    filteredCards = getOverdueCards(filteredCards);
-  }
-
-  if (filterPerson) {
-    filteredCards = filteredCards.filter(card => 
-      card.assignee.name === filterPerson
-    );
-  }
-
-  if (filterTeam) {
-    filteredCards = filteredCards.filter(card => 
-      card.tags?.includes(filterTeam)
-    );
-  }
-
-  if (filterStatus) {
-    filteredCards = filteredCards.filter(card => 
-      card.column === filterStatus
-    );
-  }
 
   // Encontrar o projeto selecionado para exibir o nome
   const currentProject = mockProjects.find(project => project.id === selectedProject);
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Nome do projeto em destaque */}
-      <div className="bg-white rounded-lg border p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Projeto: {currentProject?.name || 'Projeto não encontrado'}
-          </h2>
-          {userRole === 'admin' && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-              Administrador
-            </span>
-          )}
-        </div>
-        <p className="text-gray-600 mt-1 text-sm">
-          {currentProject?.description || 'Descrição não disponível'}
-        </p>
-      </div>
+      <ProjectHeader 
+        currentProject={currentProject} 
+        userRole={userRole}
+      />
 
       <KanbanHeader
         selectedProject={selectedProject}
@@ -250,23 +104,15 @@ export default function Kanban() {
         setFilterStatus={setFilterStatus}
       />
 
-      <DndContext 
-        collisionDetection={closestCorners}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-      >
-        <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(300px, 1fr))` }}>
-          {columns.map((column) => (
-            <DroppableKanbanColumn
-              key={column.id}
-              column={column}
-              cards={getCardsByColumn(filteredCards, column.id)}
-              onCardDoubleClick={handleCardDoubleClick}
-              onAddCard={handleAddCard}
-            />
-          ))}
-        </div>
-      </DndContext>
+      <KanbanContainer
+        columns={columns}
+        filteredCards={filteredCards}
+        cards={cards}
+        setCards={setCards}
+        userRole={userRole}
+        onCardDoubleClick={handleCardDoubleClick}
+        onAddCard={handleAddCard}
+      />
 
       <CardEditModal
         card={selectedCard}
