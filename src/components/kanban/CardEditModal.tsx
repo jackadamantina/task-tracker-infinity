@@ -17,14 +17,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Trash2, Calendar } from "lucide-react";
+import { Trash2, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Card } from "@/types/kanban";
 import { mockCards } from "@/data/mockCards";
+import { DeleteConfirmation } from "./modals/DeleteConfirmation";
+import { TagsSection } from "./modals/TagsSection";
+import { SubtasksSection } from "./modals/SubtasksSection";
+import { DependenciesSection } from "./modals/DependenciesSection";
+import { AttachmentsSection } from "./modals/AttachmentsSection";
 
 interface CardEditModalProps {
   card: Card | null;
@@ -51,8 +53,6 @@ const mockTeamMembers = [
 const availableTags = ["Backend", "Frontend", "API", "Design", "Segurança", "Mobile", "QA", "Testes", "Database", "Analytics"];
 
 export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardEditModalProps) {
-  const [newTag, setNewTag] = useState("");
-  const [newSubtask, setNewSubtask] = useState("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -132,66 +132,6 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
     }
   };
 
-  const addTag = (tag: string) => {
-    if (tag.trim() && !selectedTags.includes(tag.trim())) {
-      setSelectedTags([...selectedTags, tag.trim()]);
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
-  };
-
-  const addSubtask = () => {
-    if (newSubtask.trim()) {
-      setSubtasks([...subtasks, {
-        id: Date.now().toString(),
-        title: newSubtask.trim(),
-        completed: false
-      }]);
-      setNewSubtask("");
-    }
-  };
-
-  const toggleSubtask = (id: string) => {
-    setSubtasks(subtasks.map(s => 
-      s.id === id ? { ...s, completed: !s.completed } : s
-    ));
-  };
-
-  const removeSubtask = (id: string) => {
-    setSubtasks(subtasks.filter(s => s.id !== id));
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setUploadedFiles([...uploadedFiles, ...files]);
-  };
-
-  const removeFile = (index: number) => {
-    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
-  };
-
-  const addDependency = (cardId: string) => {
-    const id = parseInt(cardId);
-    if (!dependencies.includes(id)) {
-      setDependencies([...dependencies, id]);
-    }
-  };
-
-  const removeDependency = (cardId: number) => {
-    setDependencies(dependencies.filter(id => id !== cardId));
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Alta": return "bg-red-50 text-red-700 border-red-200";
-      case "Média": return "bg-yellow-50 text-yellow-700 border-yellow-200";
-      case "Baixa": return "bg-green-50 text-green-700 border-green-200";
-      default: return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
-
   // Filtrar cards disponíveis apenas do mesmo projeto
   const availableCards = mockCards.filter(c => 
     c.id !== card.id && c.projectId === card.projectId
@@ -217,30 +157,11 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
           </div>
         </DialogHeader>
 
-        {showDeleteConfirm && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <h4 className="text-red-800 font-medium mb-2">Confirmar Exclusão</h4>
-            <p className="text-red-700 text-sm mb-3">
-              Tem certeza que deseja deletar este card? Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-              >
-                Sim, Deletar
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        )}
+        <DeleteConfirmation
+          showDeleteConfirm={showDeleteConfirm}
+          setShowDeleteConfirm={setShowDeleteConfirm}
+          onDelete={handleDelete}
+        />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
@@ -349,175 +270,31 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
                   )}
                 />
 
-                {/* Tags */}
-                <div className="space-y-3">
-                  <FormLabel>Tags</FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedTags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="flex items-center gap-1 bg-gray-50">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 text-gray-500 hover:text-red-500"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Nova tag"
-                      className="flex-1"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag(newTag), setNewTag(""))}
-                    />
-                    <Button type="button" onClick={() => { addTag(newTag); setNewTag(""); }} size="sm">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {availableTags.filter(tag => !selectedTags.includes(tag)).map(tag => (
-                      <Badge 
-                        key={tag} 
-                        variant="outline" 
-                        className="cursor-pointer hover:bg-blue-50 text-xs"
-                        onClick={() => addTag(tag)}
-                      >
-                        + {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                <TagsSection
+                  selectedTags={selectedTags}
+                  setSelectedTags={setSelectedTags}
+                  availableTags={availableTags}
+                />
               </div>
 
               {/* Coluna Direita */}
               <div className="space-y-4">
-                {/* Subtarefas */}
-                <div className="space-y-3">
-                  <FormLabel>Subtarefas</FormLabel>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {subtasks.map(subtask => (
-                      <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
-                        <input
-                          type="checkbox"
-                          checked={subtask.completed}
-                          onChange={() => toggleSubtask(subtask.id)}
-                          className="rounded"
-                        />
-                        <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-500' : ''}`}>
-                          {subtask.title}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeSubtask(subtask.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newSubtask}
-                      onChange={(e) => setNewSubtask(e.target.value)}
-                      placeholder="Nova subtarefa"
-                      className="flex-1"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
-                    />
-                    <Button type="button" onClick={addSubtask} size="sm">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                <SubtasksSection
+                  subtasks={subtasks}
+                  setSubtasks={setSubtasks}
+                />
 
-                {/* Dependências */}
-                <div className="space-y-3">
-                  <FormLabel>Dependências</FormLabel>
-                  <p className="text-xs text-gray-500">
-                    Apenas cards do projeto "{card.projectId}" podem ser selecionados
-                  </p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {dependencies.map(depId => {
-                      const depCard = availableCards.find(c => c.id === depId);
-                      if (!depCard) return null;
-                      return (
-                        <div key={depId} className="flex items-center gap-2 p-2 border rounded text-sm">
-                          <span className="flex-1">{depCard.title}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeDependency(depId)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {availableCards.length > 0 ? (
-                    <Select onValueChange={addDependency}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Adicionar dependência" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCards.filter(c => !dependencies.includes(c.id)).map(c => (
-                          <SelectItem key={c.id} value={c.id.toString()}>
-                            {c.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-xs text-gray-500 italic">
-                      Nenhum outro card disponível neste projeto
-                    </p>
-                  )}
-                </div>
+                <DependenciesSection
+                  dependencies={dependencies}
+                  setDependencies={setDependencies}
+                  availableCards={availableCards}
+                  currentCard={card}
+                />
 
-                {/* Arquivos */}
-                <div className="space-y-3">
-                  <FormLabel>Anexos</FormLabel>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {uploadedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 border rounded text-sm">
-                        <span className="flex-1">{file.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFile(index)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      multiple
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                      accept="image/*,.pdf,.doc,.docx,.txt"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      className="w-full"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Adicionar Arquivos
-                    </Button>
-                  </div>
-                </div>
+                <AttachmentsSection
+                  uploadedFiles={uploadedFiles}
+                  setUploadedFiles={setUploadedFiles}
+                />
               </div>
             </div>
 
