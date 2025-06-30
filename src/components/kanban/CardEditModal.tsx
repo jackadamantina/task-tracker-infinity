@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -30,6 +31,7 @@ interface CardEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedCard: Card) => void;
+  onDelete?: (cardId: number) => void;
 }
 
 interface Subtask {
@@ -48,7 +50,7 @@ const mockTeamMembers = [
 
 const availableTags = ["Backend", "Frontend", "API", "Design", "Segurança", "Mobile", "QA", "Testes", "Database", "Analytics"];
 
-export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalProps) {
+export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardEditModalProps) {
   const [newTag, setNewTag] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -56,6 +58,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [dependencies, setDependencies] = useState<number[]>([]);
   const [isAdmin] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -121,6 +124,14 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
     onClose();
   };
 
+  const handleDelete = () => {
+    if (onDelete && card) {
+      onDelete(card.id);
+      setShowDeleteConfirm(false);
+      onClose();
+    }
+  };
+
   const addTag = (tag: string) => {
     if (tag.trim() && !selectedTags.includes(tag.trim())) {
       setSelectedTags([...selectedTags, tag.trim()]);
@@ -181,14 +192,55 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
     }
   };
 
-  const availableCards = mockCards.filter(c => c.id !== card.id);
+  // Filtrar cards disponíveis apenas do mesmo projeto
+  const availableCards = mockCards.filter(c => 
+    c.id !== card.id && c.projectId === card.projectId
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Card</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Editar Card</DialogTitle>
+            {isAdmin && onDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Deletar Card
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
+        {showDeleteConfirm && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <h4 className="text-red-800 font-medium mb-2">Confirmar Exclusão</h4>
+            <p className="text-red-700 text-sm mb-3">
+              Tem certeza que deseja deletar este card? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+              >
+                Sim, Deletar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
@@ -386,6 +438,9 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                 {/* Dependências */}
                 <div className="space-y-3">
                   <FormLabel>Dependências</FormLabel>
+                  <p className="text-xs text-gray-500">
+                    Apenas cards do projeto "{card.projectId}" podem ser selecionados
+                  </p>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {dependencies.map(depId => {
                       const depCard = availableCards.find(c => c.id === depId);
@@ -405,18 +460,24 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                       );
                     })}
                   </div>
-                  <Select onValueChange={addDependency}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Adicionar dependência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCards.filter(c => !dependencies.includes(c.id)).map(c => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {availableCards.length > 0 ? (
+                    <Select onValueChange={addDependency}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Adicionar dependência" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCards.filter(c => !dependencies.includes(c.id)).map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            {c.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">
+                      Nenhum outro card disponível neste projeto
+                    </p>
+                  )}
                 </div>
 
                 {/* Arquivos */}

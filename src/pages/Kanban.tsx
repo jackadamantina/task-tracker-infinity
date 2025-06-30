@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DndContext, DragEndEvent, DragOverEvent, closestCorners } from '@dnd-kit/core';
 import { KanbanHeader } from "@/components/kanban/KanbanHeader";
@@ -93,6 +92,11 @@ export default function Kanban() {
         card.id === updatedCard.id ? updatedCard : card
       )
     );
+  };
+
+  const handleCardDelete = (cardId: number) => {
+    setCards(prevCards => prevCards.filter(card => card.id !== cardId));
+    console.log(`Card ${cardId} deletado pelo administrador`);
   };
 
   const canMoveCard = (card: Card, targetColumn: string): boolean => {
@@ -272,6 +276,7 @@ export default function Kanban() {
           setSelectedCard(null);
         }}
         onSave={handleCardSave}
+        onDelete={userRole === 'admin' ? handleCardDelete : undefined}
       />
 
       <AddCardModal
