@@ -22,7 +22,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus, Upload, Trash2, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Card, mockCards } from "@/data/mockCards";
+import { Card } from "@/types/kanban";
+import { mockCards } from "@/data/mockCards";
 
 interface CardEditModalProps {
   card: Card | null;
@@ -66,7 +67,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
     },
   });
 
-  // Obter a data atual no formato YYYY-MM-DD
+  // Get current date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
