@@ -2,21 +2,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { KanbanCard } from './KanbanCard';
-
-interface Card {
-  id: number;
-  title: string;
-  description: string;
-  column: string;
-  priority: string;
-  assignee: { name: string; avatar: string };
-  attachments: number;
-  subtasks: { completed: number; total: number };
-  dependencies: number[];
-  blocked: boolean;
-  timeSpent: number;
-  tags?: string[];
-}
+import { Card } from '@/utils/kanbanUtils';
 
 interface DraggableKanbanCardProps {
   card: Card;

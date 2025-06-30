@@ -4,25 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Paperclip, Clock, ArrowRight, AlertTriangle, Timer, Calendar, AlertCircle } from "lucide-react";
-import { isCardOverdue } from "@/utils/kanbanUtils";
+import { isCardOverdue, Card as KanbanCardType } from "@/utils/kanbanUtils";
 
 interface KanbanCardProps {
-  card: {
-    id: number;
-    title: string;
-    description: string;
-    priority: string;
-    assignee: { name: string; avatar: string };
-    attachments: number;
-    subtasks: { completed: number; total: number };
-    dependencies: number[];
-    blocked: boolean;
-    timeSpent: number;
-    tags?: string[];
-    executionTime?: number;
-    estimatedCompletionDate?: Date;
-    projectId: string;
-  };
+  card: KanbanCardType;
   onDoubleClick?: () => void;
 }
 

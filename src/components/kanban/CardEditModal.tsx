@@ -20,9 +20,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { X, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X, Plus, Upload, Trash2, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Card } from "@/utils/kanbanUtils";
+import { Card, mockCards } from "@/utils/kanbanUtils";
 
 interface CardEditModalProps {
   card: Card | null;
@@ -31,67 +32,117 @@ interface CardEditModalProps {
   onSave: (updatedCard: Card) => void;
 }
 
+interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+const mockTeamMembers = [
+  { id: "1", name: "João Silva", avatar: "/placeholder.svg" },
+  { id: "2", name: "Maria Santos", avatar: "/placeholder.svg" },
+  { id: "3", name: "Pedro Costa", avatar: "/placeholder.svg" },
+  { id: "4", name: "Ana Costa", avatar: "/placeholder.svg" },
+  { id: "5", name: "Carlos Lima", avatar: "/placeholder.svg" },
+];
+
+const availableTags = ["Backend", "Frontend", "API", "Design", "Segurança", "Mobile", "QA", "Testes", "Database", "Analytics"];
+
 export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalProps) {
   const [newTag, setNewTag] = useState("");
+  const [newSubtask, setNewSubtask] = useState("");
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(card?.tags || []);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [dependencies, setDependencies] = useState<number[]>(card?.dependencies || []);
+  const [isAdmin] = useState(true); // Simulando permissão de admin
 
   const form = useForm({
     defaultValues: {
       title: card?.title || "",
       description: card?.description || "",
       priority: card?.priority || "Média",
-      assigneeName: card?.assignee.name || "",
-      attachments: card?.attachments || 0,
-      subtasksCompleted: card?.subtasks.completed || 0,
-      subtasksTotal: card?.subtasks.total || 0,
-      timeSpent: card?.timeSpent || 0,
-      executionTime: card?.executionTime || 0,
+      assigneeId: card?.assignee.name || "",
+      estimatedCompletionDate: card?.estimatedCompletionDate ? card.estimatedCompletionDate.toISOString().split('T')[0] : "",
     },
   });
 
   if (!card) return null;
 
   const handleSave = (data: any) => {
+    const selectedMember = mockTeamMembers.find(m => m.name === data.assigneeId) || mockTeamMembers[0];
+    
     const updatedCard: Card = {
       ...card,
       title: data.title,
       description: data.description,
       priority: data.priority,
       assignee: {
-        ...card.assignee,
-        name: data.assigneeName,
+        name: selectedMember.name,
+        avatar: selectedMember.avatar,
       },
-      attachments: Number(data.attachments),
+      tags: selectedTags,
+      dependencies: dependencies,
+      attachments: uploadedFiles.length,
       subtasks: {
-        completed: Number(data.subtasksCompleted),
-        total: Number(data.subtasksTotal),
+        completed: subtasks.filter(s => s.completed).length,
+        total: subtasks.length,
       },
-      timeSpent: Number(data.timeSpent),
-      executionTime: Number(data.executionTime),
+      estimatedCompletionDate: data.estimatedCompletionDate ? new Date(data.estimatedCompletionDate) : undefined,
     };
 
     onSave(updatedCard);
     onClose();
   };
 
-  const addTag = () => {
-    if (newTag.trim() && card.tags) {
-      const updatedCard = {
-        ...card,
-        tags: [...card.tags, newTag.trim()],
-      };
-      onSave(updatedCard);
-      setNewTag("");
+  const addTag = (tag: string) => {
+    if (tag.trim() && !selectedTags.includes(tag.trim())) {
+      setSelectedTags([...selectedTags, tag.trim()]);
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    if (card.tags) {
-      const updatedCard = {
-        ...card,
-        tags: card.tags.filter(tag => tag !== tagToRemove),
-      };
-      onSave(updatedCard);
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const addSubtask = () => {
+    if (newSubtask.trim()) {
+      setSubtasks([...subtasks, {
+        id: Date.now().toString(),
+        title: newSubtask.trim(),
+        completed: false
+      }]);
+      setNewSubtask("");
     }
+  };
+
+  const toggleSubtask = (id: string) => {
+    setSubtasks(subtasks.map(s => 
+      s.id === id ? { ...s, completed: !s.completed } : s
+    ));
+  };
+
+  const removeSubtask = (id: string) => {
+    setSubtasks(subtasks.filter(s => s.id !== id));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setUploadedFiles([...uploadedFiles, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  };
+
+  const addDependency = (cardId: number) => {
+    if (!dependencies.includes(cardId)) {
+      setDependencies([...dependencies, cardId]);
+    }
+  };
+
+  const removeDependency = (cardId: number) => {
+    setDependencies(dependencies.filter(id => id !== cardId));
   };
 
   const getPriorityColor = (priority: string) => {
@@ -103,184 +154,284 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
     }
   };
 
+  const availableCards = mockCards.filter(c => c.id !== card.id);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Card</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prioridade</FormLabel>
-                    <FormControl>
-                      <select 
-                        {...field} 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="Baixa">Baixa</option>
-                        <option value="Média">Média</option>
-                        <option value="Alta">Alta</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} className="min-h-[100px]" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="assigneeName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsável</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="attachments"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Anexos</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min="0" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="subtasksCompleted"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subtarefas Concluídas</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min="0" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="subtasksTotal"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total de Subtarefas</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min="0" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="timeSpent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tempo Gasto (horas)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min="0" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="executionTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tempo de Execução (horas)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min="0" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Tags Section */}
-            <div className="space-y-3">
-              <FormLabel>Tags</FormLabel>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {card.tags?.map((tag, index) => (
-                  <Badge key={index} variant="outline" className="flex items-center gap-1 bg-gray-50">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-1 text-gray-500 hover:text-red-500"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Nova tag"
-                  className="flex-1"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Coluna Esquerda */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={!isAdmin} />
+                      </FormControl>
+                      {!isAdmin && <p className="text-xs text-gray-500">Apenas administradores podem editar o título</p>}
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <Button type="button" onClick={addTag} size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} className="min-h-[100px]" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridade</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a prioridade" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Baixa">Baixa</SelectItem>
+                            <SelectItem value="Média">Média</SelectItem>
+                            <SelectItem value="Alta">Alta</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="assigneeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um responsável" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {mockTeamMembers.map(member => (
+                              <SelectItem key={member.id} value={member.name}>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5">
+                                    <AvatarImage src={member.avatar} />
+                                    <AvatarFallback className="text-xs">
+                                      {member.name.split(' ').map(n => n[0]).join('')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {member.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="estimatedCompletionDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Estimada de Conclusão</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <Input type="date" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tags */}
+                <div className="space-y-3">
+                  <FormLabel>Tags</FormLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedTags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-1 bg-gray-50">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="ml-1 text-gray-500 hover:text-red-500"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Nova tag"
+                      className="flex-1"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag(newTag), setNewTag(""))}
+                    />
+                    <Button type="button" onClick={() => { addTag(newTag); setNewTag(""); }} size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {availableTags.filter(tag => !selectedTags.includes(tag)).map(tag => (
+                      <Badge 
+                        key={tag} 
+                        variant="outline" 
+                        className="cursor-pointer hover:bg-blue-50 text-xs"
+                        onClick={() => addTag(tag)}
+                      >
+                        + {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna Direita */}
+              <div className="space-y-4">
+                {/* Subtarefas */}
+                <div className="space-y-3">
+                  <FormLabel>Subtarefas</FormLabel>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {subtasks.map(subtask => (
+                      <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
+                        <input
+                          type="checkbox"
+                          checked={subtask.completed}
+                          onChange={() => toggleSubtask(subtask.id)}
+                          className="rounded"
+                        />
+                        <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-500' : ''}`}>
+                          {subtask.title}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSubtask(subtask.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newSubtask}
+                      onChange={(e) => setNewSubtask(e.target.value)}
+                      placeholder="Nova subtarefa"
+                      className="flex-1"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                    />
+                    <Button type="button" onClick={addSubtask} size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Dependências */}
+                <div className="space-y-3">
+                  <FormLabel>Dependências</FormLabel>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {dependencies.map(depId => {
+                      const depCard = availableCards.find(c => c.id === depId);
+                      if (!depCard) return null;
+                      return (
+                        <div key={depId} className="flex items-center gap-2 p-2 border rounded text-sm">
+                          <span className="flex-1">{depCard.title}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeDependency(depId)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Select onValueChange={(value) => addDependency(Number(value))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Adicionar dependência" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCards.filter(c => !dependencies.includes(c.id)).map(c => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Arquivos */}
+                <div className="space-y-3">
+                  <FormLabel>Anexos</FormLabel>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 border rounded text-sm">
+                        <span className="flex-1">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="w-full"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Adicionar Arquivos
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -295,14 +446,14 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                   </Badge>
                 </div>
                 
-                {form.watch("subtasksTotal") > 0 && (
+                {subtasks.length > 0 && (
                   <div className="mb-2">
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
                       <span>Subtarefas</span>
-                      <span>{form.watch("subtasksCompleted")}/{form.watch("subtasksTotal")}</span>
+                      <span>{subtasks.filter(s => s.completed).length}/{subtasks.length}</span>
                     </div>
                     <Progress 
-                      value={form.watch("subtasksTotal") > 0 ? (form.watch("subtasksCompleted") / form.watch("subtasksTotal")) * 100 : 0} 
+                      value={subtasks.length > 0 ? (subtasks.filter(s => s.completed).length / subtasks.length) * 100 : 0} 
                       className="h-1.5"
                     />
                   </div>
@@ -311,17 +462,17 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={card.assignee.avatar} />
+                      <AvatarImage src={mockTeamMembers.find(m => m.name === form.watch("assigneeId"))?.avatar} />
                       <AvatarFallback className="text-xs">
-                        {form.watch("assigneeName").split(' ').map(n => n[0]).join('')}
+                        {form.watch("assigneeId").split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-gray-600">{form.watch("assigneeName")}</span>
+                    <span className="text-xs text-gray-600">{form.watch("assigneeId")}</span>
                   </div>
                   
-                  {form.watch("timeSpent") > 0 && (
-                    <span className="text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">
-                      {form.watch("timeSpent")}h
+                  {uploadedFiles.length > 0 && (
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {uploadedFiles.length} arquivo(s)
                     </span>
                   )}
                 </div>
