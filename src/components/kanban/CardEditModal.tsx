@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -132,10 +131,8 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
     }
   };
 
-  // Filtrar cards disponíveis apenas do mesmo projeto
-  const availableCards = mockCards.filter(c => 
-    c.id !== card.id && c.projectId === card.projectId
-  );
+  // Filtrar todos os cards disponíveis exceto o atual
+  const availableCards = mockCards.filter(c => c.id !== card.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

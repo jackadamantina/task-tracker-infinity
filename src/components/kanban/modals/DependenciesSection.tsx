@@ -33,7 +33,7 @@ export function DependenciesSection({
     <div className="space-y-3">
       <FormLabel>Dependências</FormLabel>
       <p className="text-xs text-gray-500">
-        Apenas cards do projeto "{currentCard.projectId}" podem ser selecionados
+        Selecione cards que devem ser concluídos antes deste card
       </p>
       <div className="space-y-2 max-h-32 overflow-y-auto">
         {dependencies.map(depId => {
@@ -42,6 +42,7 @@ export function DependenciesSection({
           return (
             <div key={depId} className="flex items-center gap-2 p-2 border rounded text-sm">
               <span className="flex-1">{depCard.title}</span>
+              <span className="text-xs text-gray-500">({depCard.projectId})</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -62,14 +63,17 @@ export function DependenciesSection({
           <SelectContent>
             {availableCards.filter(c => !dependencies.includes(c.id)).map(c => (
               <SelectItem key={c.id} value={c.id.toString()}>
-                {c.title}
+                <div className="flex flex-col items-start">
+                  <span>{c.title}</span>
+                  <span className="text-xs text-gray-500">Projeto: {c.projectId}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       ) : (
         <p className="text-xs text-gray-500 italic">
-          Nenhum outro card disponível neste projeto
+          Nenhum outro card disponível
         </p>
       )}
     </div>
