@@ -1,16 +1,16 @@
-
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Settings, Filter, Users, Clock, CheckCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus } from "lucide-react";
 import { Project } from "@/utils/kanbanUtils";
 
 interface KanbanHeaderProps {
   selectedProject: string;
-  setSelectedProject: (project: string) => void;
+  setSelectedProject: (projectId: string) => void;
   projects: Project[];
   showColumnDialog: boolean;
   setShowColumnDialog: (show: boolean) => void;
@@ -20,29 +20,18 @@ interface KanbanHeaderProps {
   setNewColumnName: (name: string) => void;
   handleAddColumn: () => void;
   filterOverdue: boolean;
-  setFilterOverdue: (filter: boolean) => void;
-  filterPerson?: string;
-  setFilterPerson?: (person: string) => void;
-  filterTeam?: string;
-  setFilterTeam?: (team: string) => void;
-  filterStatus?: string;
-  setFilterStatus?: (status: string) => void;
+  setFilterOverdue: (overdue: boolean) => void;
+  filterPerson: string;
+  setFilterPerson: (person: string) => void;
+  filterTeam: string;
+  setFilterTeam: (team: string) => void;
+  filterStatus: string;
+  setFilterStatus: (status: string) => void;
 }
 
-const mockTeamMembers = [
-  "João Silva", "Maria Santos", "Pedro Costa", "Ana Costa", "Carlos Lima"
-];
-
-const mockTeams = [
-  "Frontend", "Backend", "DevOps", "QA", "Design"
-];
-
-const statusOptions = [
-  { value: "todo", label: "A Fazer" },
-  { value: "in-progress", label: "Em Andamento" },
-  { value: "review", label: "Em Revisão" },
-  { value: "done", label: "Concluído" }
-];
+import { CycleTimeChart } from './CycleTimeChart';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { PieChart } from "lucide-react";
 
 export function KanbanHeader({
   selectedProject,
@@ -64,201 +53,218 @@ export function KanbanHeader({
   filterStatus,
   setFilterStatus
 }: KanbanHeaderProps) {
-  const currentProject = projects.find(p => p.id === selectedProject);
+  const [showCycleTimeChart, setShowCycleTimeChart] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'planning': return 'bg-yellow-100 text-yellow-800';
-      case 'on-hold': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const mockTeamMembers = [
+    "Todos", "João Silva", "Maria Santos", "Pedro Costa", "Ana Costa", "Carlos Lima"
+  ];
 
-  const clearFilters = () => {
-    if (setFilterPerson) setFilterPerson("");
-    if (setFilterTeam) setFilterTeam("");
-    if (setFilterStatus) setFilterStatus("");
-    setFilterOverdue(false);
-  };
+  const mockTeams = [
+    "Todos", "Frontend", "Backend", "DevOps", "QA", "Design"
+  ];
 
-  const hasActiveFilters = filterOverdue || filterPerson || filterTeam || filterStatus;
+  const statusOptions = [
+    { value: "", label: "Todos os Status" },
+    { value: "todo", label: "A Fazer" },
+    { value: "in-progress", label: "Em Andamento" },
+    { value: "review", label: "Em Revisão" },
+    { value: "done", label: "Concluído" }
+  ];
 
   return (
     <div className="space-y-4">
+      {/* Header principal */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Kanban Board
           </h1>
-          <div className="flex items-center gap-3 mt-1">
-            <p className="text-gray-600 font-medium">Gerencie suas tarefas de forma visual e eficiente</p>
-            {currentProject && (
-              <div className="flex items-center gap-2">
-                <Badge className={`${getStatusColor(currentProject.status)} text-xs`}>
-                  {currentProject.status === 'in-progress' ? 'Em Andamento' :
-                   currentProject.status === 'completed' ? 'Concluído' :
-                   currentProject.status === 'planning' ? 'Planejamento' : 'Pausado'}
-                </Badge>
-                <span className="text-sm text-gray-500">
-                  {currentProject.progress}% concluído
-                </span>
-              </div>
-            )}
-          </div>
+          <p className="text-gray-600 mt-1">Gerencie suas tarefas e projetos</p>
         </div>
-        
-        <div className="flex gap-3">
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-64 border-2 border-amber-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
-              <SelectValue placeholder="Selecione um projeto" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-2 border-amber-200">
-              {projects.map(project => (
-                <SelectItem key={project.id} value={project.id} className="hover:bg-amber-50">
-                  <div className="flex items-center justify-between w-full">
-                    <span>{project.name}</span>
-                    <Badge className={`${getStatusColor(project.status)} text-xs ml-2`}>
-                      {project.progress}%
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+        <div className="flex items-center gap-3">
+          {/* Tempo de Ciclo */}
+          <Dialog open={showCycleTimeChart} onOpenChange={setShowCycleTimeChart}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary hover:shadow-lg transition-all duration-300">
-                <Copy className="h-4 w-4 mr-2" />
-                Usar como Template
+              <Button variant="outline" className="flex items-center gap-2">
+                <PieChart className="h-4 w-4" />
+                Tempo de Ciclo
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white border-2 border-amber-200">
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="text-amber-800">Criar Projeto a partir de Template</DialogTitle>
+                <DialogTitle>Análise de Tempo de Ciclo</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="projectName">Nome do Novo Projeto</Label>
-                  <Input 
-                    id="projectName" 
-                    placeholder="Digite o nome do projeto..."
-                    className="border-2 border-amber-200 focus:border-amber-400"
-                  />
-                </div>
-                <Button onClick={() => setShowProjectDialog(false)} className="gradient-primary w-full">
-                  Criar Projeto
-                </Button>
-              </div>
+              <CycleTimeChart projectId={selectedProject} />
             </DialogContent>
           </Dialog>
 
+          {/* Adicionar Coluna */}
           <Dialog open={showColumnDialog} onOpenChange={setShowColumnDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-2 border-amber-300 text-amber-700 hover:bg-amber-50">
-                <Settings className="h-4 w-4 mr-2" />
-                Gerenciar Colunas
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Coluna
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white border-2 border-amber-200">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-amber-800">Adicionar Nova Coluna</DialogTitle>
+                <DialogTitle>Adicionar Nova Coluna</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="columnName">Nome da Coluna</Label>
-                  <Input 
-                    id="columnName" 
-                    value={newColumnName}
-                    onChange={(e) => setNewColumnName(e.target.value)}
-                    placeholder="Ex: Em Teste"
-                    className="border-2 border-amber-200 focus:border-amber-400"
-                  />
+                <Input
+                  placeholder="Nome da coluna"
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowColumnDialog(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleAddColumn}>
+                    Adicionar
+                  </Button>
                 </div>
-                <Button onClick={handleAddColumn} className="gradient-primary w-full">
-                  Adicionar Coluna
-                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Novo Projeto */}
+          <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Projeto
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Novo Projeto</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input placeholder="Nome do projeto" />
+                <Textarea placeholder="Descrição do projeto" />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowProjectDialog(false)}>
+                    Cancelar
+                  </Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    Criar Projeto
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Filtros:</span>
-        </div>
-
-        <Select value={filterPerson || ""} onValueChange={setFilterPerson}>
-          <SelectTrigger className="w-40">
-            <div className="flex items-center gap-2">
-              <Users className="h-3 w-3" />
-              <SelectValue placeholder="Pessoa" />
+      {/* Seletor de Projeto e Filtros */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            {/* Seletor de Projeto */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Projeto</label>
+              <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Todas as pessoas</SelectItem>
-            {mockTeamMembers.map(member => (
-              <SelectItem key={member} value={member}>{member}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
-        <Select value={filterTeam || ""} onValueChange={setFilterTeam}>
-          <SelectTrigger className="w-40">
-            <div className="flex items-center gap-2">
-              <Users className="h-3 w-3" />
-              <SelectValue placeholder="Time" />
+            {/* Filtro por Pessoa */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Pessoa</label>
+              <Select value={filterPerson} onValueChange={setFilterPerson}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por pessoa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockTeamMembers.map((member) => (
+                    <SelectItem key={member} value={member === "Todos" ? "" : member}>
+                      {member}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Todos os times</SelectItem>
-            {mockTeams.map(team => (
-              <SelectItem key={team} value={team}>{team}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
-        <Select value={filterStatus || ""} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-3 w-3" />
-              <SelectValue placeholder="Status" />
+            {/* Filtro por Time */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Time</label>
+              <Select value={filterTeam} onValueChange={setFilterTeam}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockTeams.map((team) => (
+                    <SelectItem key={team} value={team === "Todos" ? "" : team}>
+                      {team}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
-            {statusOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
-        <Button
-          variant={filterOverdue ? "default" : "outline"}
-          onClick={() => setFilterOverdue(!filterOverdue)}
-          className={filterOverdue ? "bg-red-600 hover:bg-red-700" : "border-red-200 text-red-600 hover:bg-red-50"}
-          size="sm"
-        >
-          <Clock className="h-3 w-3 mr-1" />
-          Atrasados
-        </Button>
+            {/* Filtro por Status */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            onClick={clearFilters}
-            size="sm"
-            className="text-gray-600 hover:text-gray-800"
-          >
-            Limpar Filtros
-          </Button>
-        )}
-      </div>
+            {/* Filtro Atrasados */}
+            <div className="flex items-end">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="overdue"
+                  checked={filterOverdue}
+                  onCheckedChange={setFilterOverdue}
+                />
+                <label
+                  htmlFor="overdue"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Apenas Atrasados
+                </label>
+              </div>
+            </div>
+
+            {/* Limpar Filtros */}
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setFilterPerson("");
+                  setFilterTeam("");
+                  setFilterStatus("");
+                  setFilterOverdue(false);
+                }}
+                className="w-full"
+              >
+                Limpar Filtros
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

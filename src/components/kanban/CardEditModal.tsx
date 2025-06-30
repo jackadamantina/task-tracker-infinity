@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,20 +52,43 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
   const [newTag, setNewTag] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>(card?.tags || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [dependencies, setDependencies] = useState<number[]>(card?.dependencies || []);
-  const [isAdmin] = useState(true); // Simulando permissão de admin
+  const [dependencies, setDependencies] = useState<number[]>([]);
+  const [isAdmin] = useState(true);
 
   const form = useForm({
     defaultValues: {
-      title: card?.title || "",
-      description: card?.description || "",
-      priority: card?.priority || "Média",
-      assigneeId: card?.assignee.name || "",
-      estimatedCompletionDate: card?.estimatedCompletionDate ? card.estimatedCompletionDate.toISOString().split('T')[0] : "",
+      title: "",
+      description: "",
+      priority: "Média",
+      assigneeId: "",
+      estimatedCompletionDate: "",
     },
   });
+
+  useEffect(() => {
+    if (card) {
+      form.reset({
+        title: card.title,
+        description: card.description,
+        priority: card.priority,
+        assigneeId: card.assignee.name,
+        estimatedCompletionDate: card.estimatedCompletionDate ? 
+          card.estimatedCompletionDate.toISOString().split('T')[0] : "",
+      });
+      setSelectedTags(card.tags || []);
+      setDependencies(card.dependencies || []);
+      
+      // Inicializar subtarefas baseado nos dados do card
+      const initialSubtasks = Array.from({ length: card.subtasks.total }, (_, i) => ({
+        id: `subtask-${i}`,
+        title: `Subtarefa ${i + 1}`,
+        completed: i < card.subtasks.completed
+      }));
+      setSubtasks(initialSubtasks);
+    }
+  }, [card, form]);
 
   if (!card) return null;
 
@@ -135,9 +158,10 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
     setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
   };
 
-  const addDependency = (cardId: number) => {
-    if (!dependencies.includes(cardId)) {
-      setDependencies([...dependencies, cardId]);
+  const addDependency = (cardId: string) => {
+    const id = parseInt(cardId);
+    if (!dependencies.includes(id)) {
+      setDependencies([...dependencies, id]);
     }
   };
 
@@ -204,7 +228,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Prioridade</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione a prioridade" />
@@ -227,7 +251,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Responsável</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione um responsável" />
@@ -236,15 +260,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                           <SelectContent>
                             {mockTeamMembers.map(member => (
                               <SelectItem key={member.id} value={member.name}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-5 w-5">
-                                    <AvatarImage src={member.avatar} />
-                                    <AvatarFallback className="text-xs">
-                                      {member.name.split(' ').map(n => n[0]).join('')}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  {member.name}
-                                </div>
+                                {member.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -380,7 +396,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                       );
                     })}
                   </div>
-                  <Select onValueChange={(value) => addDependency(Number(value))}>
+                  <Select onValueChange={addDependency}>
                     <SelectTrigger>
                       <SelectValue placeholder="Adicionar dependência" />
                     </SelectTrigger>
@@ -431,50 +447,6 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                       Adicionar Arquivos
                     </Button>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Preview Section */}
-            <div className="border-t pt-4">
-              <FormLabel className="mb-3 block">Preview do Card</FormLabel>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-medium text-sm">{form.watch("title") || "Título do card"}</h4>
-                  <Badge className={`${getPriorityColor(form.watch("priority"))} text-xs border`}>
-                    {form.watch("priority")}
-                  </Badge>
-                </div>
-                
-                {subtasks.length > 0 && (
-                  <div className="mb-2">
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                      <span>Subtarefas</span>
-                      <span>{subtasks.filter(s => s.completed).length}/{subtasks.length}</span>
-                    </div>
-                    <Progress 
-                      value={subtasks.length > 0 ? (subtasks.filter(s => s.completed).length / subtasks.length) * 100 : 0} 
-                      className="h-1.5"
-                    />
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={mockTeamMembers.find(m => m.name === form.watch("assigneeId"))?.avatar} />
-                      <AvatarFallback className="text-xs">
-                        {form.watch("assigneeId").split(' ').map((n: string) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs text-gray-600">{form.watch("assigneeId")}</span>
-                  </div>
-                  
-                  {uploadedFiles.length > 0 && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {uploadedFiles.length} arquivo(s)
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
