@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Slack, Mail, Clock, Users, Settings, Bell, Plus, Edit, Trash2, Search, TrendingUp, BarChart3, Target, UserPlus, Shield, Group } from "lucide-react";
+import { toast } from "sonner";
 
 const Config = () => {
   const [workingDays, setWorkingDays] = useState({
@@ -38,8 +39,26 @@ const Config = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [userSubTab, setUserSubTab] = useState("users");
 
+  // Estados para formulários
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    role: "",
+    group: ""
+  });
+
+  const [newProfile, setNewProfile] = useState({
+    name: "",
+    permissions: [] as string[]
+  });
+
+  const [newGroup, setNewGroup] = useState({
+    name: "",
+    description: ""
+  });
+
   // Mock data de usuários para a aba de usuários
-  const users = [
+  const [users, setUsers] = useState([
     {
       id: 1,
       name: "João Silva",
@@ -73,20 +92,97 @@ const Config = () => {
       projects: ["Dashboard Analytics"],
       createdAt: "2024-02-01"
     }
-  ];
+  ]);
 
   // Mock data para perfis e grupos
-  const profiles = [
+  const [profiles, setProfiles] = useState([
     { id: 1, name: "Administrador", permissions: ["Criar", "Editar", "Excluir", "Visualizar"], users: 5 },
     { id: 2, name: "Gerente", permissions: ["Criar", "Editar", "Visualizar"], users: 8 },
     { id: 3, name: "Desenvolvedor", permissions: ["Editar", "Visualizar"], users: 12 },
-  ];
+  ]);
 
-  const groups = [
+  const [groups, setGroups] = useState([
     { id: 1, name: "Desenvolvimento", members: 8, projects: ["Sistema E-commerce", "App Mobile"] },
     { id: 2, name: "Design", members: 4, projects: ["App Mobile", "Dashboard Analytics"] },
     { id: 3, name: "Qualidade", members: 3, projects: ["Sistema E-commerce"] },
-  ];
+  ]);
+
+  // Funções para criar novos itens
+  const handleCreateUser = () => {
+    if (!newUser.name || !newUser.email || !newUser.role || !newUser.group) {
+      toast.error("Todos os campos são obrigatórios");
+      return;
+    }
+
+    const newUserData = {
+      id: users.length + 1,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      group: newUser.group,
+      status: "Ativo",
+      avatar: "/placeholder.svg",
+      projects: [],
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setUsers([...users, newUserData]);
+    setNewUser({ name: "", email: "", role: "", group: "" });
+    setIsCreateUserModalOpen(false);
+    toast.success("Usuário criado com sucesso!");
+  };
+
+  const handleCreateProfile = () => {
+    if (!newProfile.name || newProfile.permissions.length === 0) {
+      toast.error("Nome e pelo menos uma permissão são obrigatórios");
+      return;
+    }
+
+    const newProfileData = {
+      id: profiles.length + 1,
+      name: newProfile.name,
+      permissions: newProfile.permissions,
+      users: 0
+    };
+
+    setProfiles([...profiles, newProfileData]);
+    setNewProfile({ name: "", permissions: [] });
+    setIsCreateProfileModalOpen(false);
+    toast.success("Perfil criado com sucesso!");
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroup.name) {
+      toast.error("Nome do grupo é obrigatório");
+      return;
+    }
+
+    const newGroupData = {
+      id: groups.length + 1,
+      name: newGroup.name,
+      members: 0,
+      projects: []
+    };
+
+    setGroups([...groups, newGroupData]);
+    setNewGroup({ name: "", description: "" });
+    setIsCreateGroupModalOpen(false);
+    toast.success("Grupo criado com sucesso!");
+  };
+
+  const handlePermissionChange = (permission: string, checked: boolean) => {
+    if (checked) {
+      setNewProfile({
+        ...newProfile,
+        permissions: [...newProfile.permissions, permission]
+      });
+    } else {
+      setNewProfile({
+        ...newProfile,
+        permissions: newProfile.permissions.filter(p => p !== permission)
+      });
+    }
+  };
 
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,13 +211,6 @@ const Config = () => {
     saturday: "Sábado",
     sunday: "Domingo"
   };
-
-  // Mock data para análise de campanhas
-  const campaignData = [
-    { name: "Campanha A", leads: 1250, conversions: 89, roi: "340%" },
-    { name: "Campanha B", leads: 980, conversions: 76, roi: "275%" },
-    { name: "Campanha C", leads: 1450, conversions: 112, roi: "420%" },
-  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -347,35 +436,46 @@ const Config = () => {
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">Nome</Label>
-                        <Input id="name" className="col-span-3" />
+                        <Input 
+                          id="name" 
+                          className="col-span-3" 
+                          value={newUser.name}
+                          onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                        />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="email" className="text-right">Email</Label>
-                        <Input id="email" type="email" className="col-span-3" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          className="col-span-3" 
+                          value={newUser.email}
+                          onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                        />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="role" className="text-right">Perfil</Label>
-                        <Select>
+                        <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
                           <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Selecione um perfil" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="manager">Gerente</SelectItem>
-                            <SelectItem value="developer">Desenvolvedor</SelectItem>
+                            <SelectItem value="Administrador">Administrador</SelectItem>
+                            <SelectItem value="Gerente">Gerente</SelectItem>
+                            <SelectItem value="Desenvolvedor">Desenvolvedor</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="group" className="text-right">Grupo</Label>
-                        <Select>
+                        <Select value={newUser.group} onValueChange={(value) => setNewUser({...newUser, group: value})}>
                           <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Selecione um grupo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="dev">Desenvolvimento</SelectItem>
-                            <SelectItem value="design">Design</SelectItem>
-                            <SelectItem value="qa">Qualidade</SelectItem>
+                            <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
+                            <SelectItem value="Design">Design</SelectItem>
+                            <SelectItem value="Qualidade">Qualidade</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -384,7 +484,7 @@ const Config = () => {
                       <Button variant="outline" onClick={() => setIsCreateUserModalOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateUser}>
                         Criar Usuário
                       </Button>
                     </div>
@@ -475,14 +575,24 @@ const Config = () => {
                     <div className="grid gap-4 py-4">
                       <div>
                         <Label htmlFor="profileName">Nome do Perfil</Label>
-                        <Input id="profileName" placeholder="Ex: Supervisor" />
+                        <Input 
+                          id="profileName" 
+                          placeholder="Ex: Supervisor" 
+                          value={newProfile.name}
+                          onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
+                        />
                       </div>
                       <div>
                         <Label>Permissões</Label>
                         <div className="space-y-2 mt-2">
                           {["Criar", "Editar", "Excluir", "Visualizar"].map(permission => (
                             <div key={permission} className="flex items-center space-x-2">
-                              <input type="checkbox" id={permission} />
+                              <input 
+                                type="checkbox" 
+                                id={permission} 
+                                checked={newProfile.permissions.includes(permission)}
+                                onChange={(e) => handlePermissionChange(permission, e.target.checked)}
+                              />
                               <Label htmlFor={permission}>{permission}</Label>
                             </div>
                           ))}
@@ -493,7 +603,7 @@ const Config = () => {
                       <Button variant="outline" onClick={() => setIsCreateProfileModalOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateProfile}>
                         Criar Perfil
                       </Button>
                     </div>
@@ -550,18 +660,28 @@ const Config = () => {
                     <div className="grid gap-4 py-4">
                       <div>
                         <Label htmlFor="groupName">Nome do Grupo</Label>
-                        <Input id="groupName" placeholder="Ex: Marketing" />
+                        <Input 
+                          id="groupName" 
+                          placeholder="Ex: Marketing" 
+                          value={newGroup.name}
+                          onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="groupDescription">Descrição</Label>
-                        <Input id="groupDescription" placeholder="Descrição do grupo" />
+                        <Input 
+                          id="groupDescription" 
+                          placeholder="Descrição do grupo" 
+                          value={newGroup.description}
+                          onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
+                        />
                       </div>
                     </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setIsCreateGroupModalOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateGroup}>
                         Criar Grupo
                       </Button>
                     </div>
