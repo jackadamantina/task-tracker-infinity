@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -20,12 +21,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Card } from "@/types/kanban";
-import { mockCards } from "@/data/mockCards";
 import { DeleteConfirmation } from "./modals/DeleteConfirmation";
 import { TagsSection } from "./modals/TagsSection";
 import { SubtasksSection } from "./modals/SubtasksSection";
 import { DependenciesSection } from "./modals/DependenciesSection";
 import { AttachmentsSection } from "./modals/AttachmentsSection";
+import { useSystemUsers } from "@/hooks/useSystemUsers";
+import { useSupabaseKanban } from "@/hooks/useSupabaseKanban";
 
 interface CardEditModalProps {
   card: Card | null;
@@ -41,14 +43,6 @@ interface Subtask {
   completed: boolean;
 }
 
-const mockTeamMembers = [
-  { id: "1", name: "João Silva", avatar: "/placeholder.svg" },
-  { id: "2", name: "Maria Santos", avatar: "/placeholder.svg" },
-  { id: "3", name: "Pedro Costa", avatar: "/placeholder.svg" },
-  { id: "4", name: "Ana Costa", avatar: "/placeholder.svg" },
-  { id: "5", name: "Carlos Lima", avatar: "/placeholder.svg" },
-];
-
 const availableTags = ["Backend", "Frontend", "API", "Design", "Segurança", "Mobile", "QA", "Testes", "Database", "Analytics"];
 
 export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardEditModalProps) {
@@ -58,6 +52,9 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
   const [dependencies, setDependencies] = useState<number[]>([]);
   const [isAdmin] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { users } = useSystemUsers();
+  const { cards: allCards } = useSupabaseKanban();
 
   const form = useForm({
     defaultValues: {
@@ -98,7 +95,7 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
   if (!card) return null;
 
   const handleSave = (data: any) => {
-    const selectedMember = mockTeamMembers.find(m => m.name === data.assigneeId) || mockTeamMembers[0];
+    const selectedUser = users.find(u => u.name === data.assigneeId);
     
     const updatedCard: Card = {
       ...card,
@@ -106,8 +103,8 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
       description: data.description,
       priority: data.priority,
       assignee: {
-        name: selectedMember.name,
-        avatar: selectedMember.avatar,
+        name: selectedUser?.name || data.assigneeId || "Não atribuído",
+        avatar: selectedUser?.avatar || "/placeholder.svg",
       },
       tags: selectedTags,
       dependencies: dependencies,
@@ -131,8 +128,12 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
     }
   };
 
-  // Filtrar todos os cards disponíveis exceto o atual
-  const availableCards = mockCards.filter(c => c.id !== card.id);
+  // Converter cards do Supabase para o formato esperado pelas dependências
+  const availableCards = allCards.map(supabaseCard => ({
+    id: parseInt(supabaseCard.id, 10) || Date.now(),
+    title: supabaseCard.title,
+    project: supabaseCard.project?.name || "Sem projeto"
+  })).filter(c => c.id !== card.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -231,9 +232,9 @@ export function CardEditModal({ card, isOpen, onClose, onSave, onDelete }: CardE
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {mockTeamMembers.map(member => (
-                              <SelectItem key={member.id} value={member.name}>
-                                {member.name}
+                            {users.map(user => (
+                              <SelectItem key={user.id} value={user.name}>
+                                {user.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

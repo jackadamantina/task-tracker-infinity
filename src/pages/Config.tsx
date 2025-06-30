@@ -1,730 +1,333 @@
+
 import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Slack, Mail, Clock, Users, Settings, Bell, Plus, Edit, Trash2, Search, TrendingUp, BarChart3, Target, UserPlus, Shield, Group } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, Users, Shield, Settings2 } from "lucide-react";
+import { useProfiles } from "@/hooks/useProfiles";
+import { useGroups } from "@/hooks/useGroups";
+import { useSystemUsers } from "@/hooks/useSystemUsers";
 
-const Config = () => {
-  const [workingDays, setWorkingDays] = useState({
-    monday: true,
-    tuesday: true,
-    wednesday: true,
-    thursday: true,
-    friday: true,
-    saturday: false,
-    sunday: false
-  });
-
-  const [workingHours, setWorkingHours] = useState({
-    start: "09:00",
-    end: "18:00"
-  });
-
-  const [integrations, setIntegrations] = useState([
-    { id: 1, type: "slack", name: "Slack - Equipe João", webhook: "https://hooks.slack.com/...", active: true },
-    { id: 2, type: "email", name: "Email - Cliente Marcos", address: "marcos@cliente.com", active: true }
-  ]);
-
-  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
-  const [isCreateProfileModalOpen, setIsCreateProfileModalOpen] = useState(false);
-  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [userSubTab, setUserSubTab] = useState("users");
+export default function Config() {
+  const { profiles, loading: profilesLoading, createProfile } = useProfiles();
+  const { groups, loading: groupsLoading, createGroup } = useGroups();
+  const { users, loading: usersLoading, createUser } = useSystemUsers();
 
   // Estados para formulários
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    role: "",
-    group: ""
+  const [newProfile, setNewProfile] = useState({ name: "", description: "" });
+  const [newGroup, setNewGroup] = useState({ name: "", description: "" });
+  const [newUser, setNewUser] = useState({ 
+    name: "", 
+    email: "", 
+    profile_id: "", 
+    group_id: "" 
   });
 
-  const [newProfile, setNewProfile] = useState({
-    name: "",
-    permissions: [] as string[]
-  });
-
-  const [newGroup, setNewGroup] = useState({
-    name: "",
-    description: ""
-  });
-
-  // Mock data de usuários para a aba de usuários
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "João Silva",
-      email: "joao@tasktracker.com",
-      role: "Administrador",
-      group: "Desenvolvimento",
-      status: "Ativo",
-      avatar: "/placeholder.svg",
-      projects: ["Sistema E-commerce", "App Mobile"],
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Maria Santos",
-      email: "maria@tasktracker.com",
-      role: "Gerente",
-      group: "Design",
-      status: "Ativo",
-      avatar: "/placeholder.svg",
-      projects: ["App Mobile", "Dashboard Analytics"],
-      createdAt: "2024-01-20"
-    },
-    {
-      id: 3,
-      name: "Pedro Costa",
-      email: "pedro@tasktracker.com",
-      role: "Desenvolvedor",
-      group: "Desenvolvimento",
-      status: "Inativo",
-      avatar: "/placeholder.svg",
-      projects: ["Dashboard Analytics"],
-      createdAt: "2024-02-01"
+  const handleCreateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createProfile(newProfile);
+      setNewProfile({ name: "", description: "" });
+    } catch (error) {
+      console.error('Erro ao criar perfil:', error);
     }
-  ]);
-
-  // Mock data para perfis e grupos
-  const [profiles, setProfiles] = useState([
-    { id: 1, name: "Administrador", permissions: ["Criar", "Editar", "Excluir", "Visualizar"], users: 5 },
-    { id: 2, name: "Gerente", permissions: ["Criar", "Editar", "Visualizar"], users: 8 },
-    { id: 3, name: "Desenvolvedor", permissions: ["Editar", "Visualizar"], users: 12 },
-  ]);
-
-  const [groups, setGroups] = useState([
-    { id: 1, name: "Desenvolvimento", members: 8, projects: ["Sistema E-commerce", "App Mobile"] },
-    { id: 2, name: "Design", members: 4, projects: ["App Mobile", "Dashboard Analytics"] },
-    { id: 3, name: "Qualidade", members: 3, projects: ["Sistema E-commerce"] },
-  ]);
-
-  // Funções para criar novos itens
-  const handleCreateUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.role || !newUser.group) {
-      toast.error("Todos os campos são obrigatórios");
-      return;
-    }
-
-    const newUserData = {
-      id: users.length + 1,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      group: newUser.group,
-      status: "Ativo",
-      avatar: "/placeholder.svg",
-      projects: [],
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    setUsers([...users, newUserData]);
-    setNewUser({ name: "", email: "", role: "", group: "" });
-    setIsCreateUserModalOpen(false);
-    toast.success("Usuário criado com sucesso!");
   };
 
-  const handleCreateProfile = () => {
-    if (!newProfile.name || newProfile.permissions.length === 0) {
-      toast.error("Nome e pelo menos uma permissão são obrigatórios");
-      return;
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createGroup(newGroup);
+      setNewGroup({ name: "", description: "" });
+    } catch (error) {
+      console.error('Erro ao criar grupo:', error);
     }
-
-    const newProfileData = {
-      id: profiles.length + 1,
-      name: newProfile.name,
-      permissions: newProfile.permissions,
-      users: 0
-    };
-
-    setProfiles([...profiles, newProfileData]);
-    setNewProfile({ name: "", permissions: [] });
-    setIsCreateProfileModalOpen(false);
-    toast.success("Perfil criado com sucesso!");
   };
 
-  const handleCreateGroup = () => {
-    if (!newGroup.name) {
-      toast.error("Nome do grupo é obrigatório");
-      return;
-    }
-
-    const newGroupData = {
-      id: groups.length + 1,
-      name: newGroup.name,
-      members: 0,
-      projects: []
-    };
-
-    setGroups([...groups, newGroupData]);
-    setNewGroup({ name: "", description: "" });
-    setIsCreateGroupModalOpen(false);
-    toast.success("Grupo criado com sucesso!");
-  };
-
-  const handlePermissionChange = (permission: string, checked: boolean) => {
-    if (checked) {
-      setNewProfile({
-        ...newProfile,
-        permissions: [...newProfile.permissions, permission]
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createUser({
+        ...newUser,
+        profile_id: newUser.profile_id || undefined,
+        group_id: newUser.group_id || undefined
       });
-    } else {
-      setNewProfile({
-        ...newProfile,
-        permissions: newProfile.permissions.filter(p => p !== permission)
-      });
+      setNewUser({ name: "", email: "", profile_id: "", group_id: "" });
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
     }
-  };
-
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "Administrador": return "bg-red-100 text-red-800";
-      case "Gerente": return "bg-blue-100 text-blue-800";
-      case "Desenvolvedor": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === "Ativo" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800";
-  };
-
-  const dayNames = {
-    monday: "Segunda-feira",
-    tuesday: "Terça-feira", 
-    wednesday: "Quarta-feira",
-    thursday: "Quinta-feira",
-    friday: "Sexta-feira",
-    saturday: "Sábado",
-    sunday: "Domingo"
   };
 
   return (
     <div className="p-6 space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
-        <p className="text-gray-600 mt-1">Gerencie as configurações da plataforma</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
+          <p className="text-gray-600 mt-1">Gerencie usuários, perfis e configurações do sistema</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs defaultValue="users" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Geral
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Horários
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Integrações
-          </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Usuários
           </TabsTrigger>
+          <TabsTrigger value="profiles" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Perfis
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Grupos
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Sistema
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações Gerais</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome da Empresa
-                  </label>
-                  <Input defaultValue="Task Tracker" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email de Contato
-                  </label>
-                  <Input defaultValue="contato@tasktracker.com" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Notificações</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    Cards concluídos
-                  </label>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    Novos cards
-                  </label>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    Cards atrasados
-                  </label>
-                  <Switch />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="schedule" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dias Úteis</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(dayNames).map(([key, name]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">{name}</label>
-                    <Switch
-                      checked={workingDays[key as keyof typeof workingDays]}
-                      onCheckedChange={(checked) =>
-                        setWorkingDays(prev => ({ ...prev, [key]: checked }))
-                      }
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Horário de Trabalho</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Início
-                  </label>
-                  <Input
-                    type="time"
-                    value={workingHours.start}
-                    onChange={(e) => setWorkingHours(prev => ({ ...prev, start: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fim
-                  </label>
-                  <Input
-                    type="time"
-                    value={workingHours.end}
-                    onChange={(e) => setWorkingHours(prev => ({ ...prev, end: e.target.value }))}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="integrations" className="space-y-6">
+        <TabsContent value="users" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Integrações Ativas</CardTitle>
+              <CardTitle>Gerenciar Usuários</CardTitle>
+              <CardDescription>Adicione e gerencie usuários do sistema</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {integrations.map((integration) => (
-                <div key={integration.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {integration.type === 'slack' ? (
-                      <Slack className="h-5 w-5 text-purple-600" />
-                    ) : (
-                      <Mail className="h-5 w-5 text-blue-600" />
-                    )}
-                    <div>
-                      <p className="font-medium text-gray-900">{integration.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {integration.type === 'slack' ? 'Webhook configurado' : integration.address}
-                      </p>
-                    </div>
+            <CardContent>
+              <form onSubmit={handleCreateUser} className="space-y-4 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="userName">Nome</Label>
+                    <Input
+                      id="userName"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      placeholder="Nome do usuário"
+                      required
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={integration.active ? "default" : "secondary"}>
-                      {integration.active ? "Ativo" : "Inativo"}
-                    </Badge>
-                    <Switch
-                      checked={integration.active}
-                      onCheckedChange={(checked) =>
-                        setIntegrations(prev =>
-                          prev.map(int => int.id === integration.id ? { ...int, active: checked } : int)
-                        )
-                      }
+                  <div>
+                    <Label htmlFor="userEmail">Email</Label>
+                    <Input
+                      id="userEmail"
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                      required
                     />
                   </div>
                 </div>
-              ))}
-              
-              <div className="flex gap-4 pt-4">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Slack className="h-4 w-4" />
-                  Adicionar Slack
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="userProfile">Perfil</Label>
+                    <Select value={newUser.profile_id} onValueChange={(value) => setNewUser({ ...newUser, profile_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um perfil" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="userGroup">Grupo</Label>
+                    <Select value={newUser.group_id} onValueChange={(value) => setNewUser({ ...newUser, group_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um grupo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button type="submit" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Usuário
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Adicionar Email
-                </Button>
+              </form>
+
+              <div className="space-y-3">
+                {usersLoading ? (
+                  <p>Carregando usuários...</p>
+                ) : (
+                  users.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-sm text-gray-600">{user.email}</div>
+                        <div className="flex gap-2 mt-1">
+                          {user.profiles && (
+                            <Badge variant="secondary">{user.profiles.name}</Badge>
+                          )}
+                          {user.groups && (
+                            <Badge variant="outline">{user.groups.name}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Gestão de Usuários</h2>
-              <p className="text-gray-600 mt-1">Gerencie usuários, perfis e grupos</p>
-            </div>
-          </div>
+        <TabsContent value="profiles" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciar Perfis</CardTitle>
+              <CardDescription>Configure perfis de acesso e permissões</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateProfile} className="space-y-4 mb-6">
+                <div>
+                  <Label htmlFor="profileName">Nome do Perfil</Label>
+                  <Input
+                    id="profileName"
+                    value={newProfile.name}
+                    onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
+                    placeholder="Nome do perfil"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="profileDesc">Descrição</Label>
+                  <Textarea
+                    id="profileDesc"
+                    value={newProfile.description}
+                    onChange={(e) => setNewProfile({ ...newProfile, description: e.target.value })}
+                    placeholder="Descrição do perfil"
+                  />
+                </div>
+                <Button type="submit" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Perfil
+                </Button>
+              </form>
 
-          {/* Sub-abas dentro de Usuários */}
-          <Tabs value={userSubTab} onValueChange={setUserSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Usuários
-              </TabsTrigger>
-              <TabsTrigger value="profiles" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Perfis
-              </TabsTrigger>
-              <TabsTrigger value="groups" className="flex items-center gap-2">
-                <Group className="h-4 w-4" />
-                Grupos
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Aba Usuários */}
-            <TabsContent value="users" className="space-y-6">
-              <div className="flex justify-end">
-                <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo Usuário
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Criar Novo Usuário</DialogTitle>
-                      <DialogDescription>
-                        Adicione um novo usuário ao sistema Task Tracker.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">Nome</Label>
-                        <Input 
-                          id="name" 
-                          className="col-span-3" 
-                          value={newUser.name}
-                          onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">Email</Label>
-                        <Input 
-                          id="email" 
-                          type="email" 
-                          className="col-span-3" 
-                          value={newUser.email}
-                          onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="role" className="text-right">Perfil</Label>
-                        <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Selecione um perfil" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Administrador">Administrador</SelectItem>
-                            <SelectItem value="Gerente">Gerente</SelectItem>
-                            <SelectItem value="Desenvolvedor">Desenvolvedor</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="group" className="text-right">Grupo</Label>
-                        <Select value={newUser.group} onValueChange={(value) => setNewUser({...newUser, group: value})}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Selecione um grupo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
-                            <SelectItem value="Design">Design</SelectItem>
-                            <SelectItem value="Qualidade">Qualidade</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsCreateUserModalOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateUser}>
-                        Criar Usuário
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Barra de pesquisa */}
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="relative">
-                    <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                    <Input
-                      placeholder="Pesquisar usuários..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Lista de usuários */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Usuários ({filteredUsers.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {filteredUsers.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <Avatar>
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                          </Avatar>
-                          
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                            <p className="text-xs text-gray-500">Membro desde {new Date(user.createdAt).toLocaleDateString('pt-BR')}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="flex gap-2 mb-1">
-                              <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
-                              <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">Grupo: {user.group}</p>
-                            <p className="text-xs text-gray-500">{user.projects.length} projeto(s)</p>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Aba Perfis */}
-            <TabsContent value="profiles" className="space-y-6">
-              <div className="flex justify-end">
-                <Dialog open={isCreateProfileModalOpen} onOpenChange={setIsCreateProfileModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo Perfil
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Criar Novo Perfil</DialogTitle>
-                      <DialogDescription>
-                        Defina as permissões para um novo perfil de usuário.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
+              <div className="space-y-3">
+                {profilesLoading ? (
+                  <p>Carregando perfis...</p>
+                ) : (
+                  profiles.map((profile) => (
+                    <div key={profile.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <Label htmlFor="profileName">Nome do Perfil</Label>
-                        <Input 
-                          id="profileName" 
-                          placeholder="Ex: Supervisor" 
-                          value={newProfile.name}
-                          onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
-                        />
+                        <div className="font-medium">{profile.name}</div>
+                        <div className="text-sm text-gray-600">{profile.description}</div>
                       </div>
-                      <div>
-                        <Label>Permissões</Label>
-                        <div className="space-y-2 mt-2">
-                          {["Criar", "Editar", "Excluir", "Visualizar"].map(permission => (
-                            <div key={permission} className="flex items-center space-x-2">
-                              <input 
-                                type="checkbox" 
-                                id={permission} 
-                                checked={newProfile.permissions.includes(permission)}
-                                onChange={(e) => handlePermissionChange(permission, e.target.checked)}
-                              />
-                              <Label htmlFor={permission}>{permission}</Label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsCreateProfileModalOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateProfile}>
-                        Criar Perfil
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  ))
+                )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="grid gap-4">
-                {profiles.map((profile) => (
-                  <Card key={profile.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{profile.name}</h3>
-                          <p className="text-sm text-gray-600">{profile.users} usuário(s)</p>
-                          <div className="flex gap-2 mt-2">
-                            {profile.permissions.map(permission => (
-                              <Badge key={permission} variant="outline">{permission}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-red-600">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
+        <TabsContent value="groups" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciar Grupos</CardTitle>
+              <CardDescription>Organize usuários em grupos de trabalho</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateGroup} className="space-y-4 mb-6">
+                <div>
+                  <Label htmlFor="groupName">Nome do Grupo</Label>
+                  <Input
+                    id="groupName"
+                    value={newGroup.name}
+                    onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                    placeholder="Nome do grupo"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="groupDesc">Descrição</Label>
+                  <Textarea
+                    id="groupDesc"
+                    value={newGroup.description}
+                    onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                    placeholder="Descrição do grupo"
+                  />
+                </div>
+                <Button type="submit" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Grupo
+                </Button>
+              </form>
 
-            {/* Aba Grupos */}
-            <TabsContent value="groups" className="space-y-6">
-              <div className="flex justify-end">
-                <Dialog open={isCreateGroupModalOpen} onOpenChange={setIsCreateGroupModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo Grupo
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Criar Novo Grupo</DialogTitle>
-                      <DialogDescription>
-                        Organize usuários em grupos de trabalho.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
+              <div className="space-y-3">
+                {groupsLoading ? (
+                  <p>Carregando grupos...</p>
+                ) : (
+                  groups.map((group) => (
+                    <div key={group.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <Label htmlFor="groupName">Nome do Grupo</Label>
-                        <Input 
-                          id="groupName" 
-                          placeholder="Ex: Marketing" 
-                          value={newGroup.name}
-                          onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
-                        />
+                        <div className="font-medium">{group.name}</div>
+                        <div className="text-sm text-gray-600">{group.description}</div>
                       </div>
-                      <div>
-                        <Label htmlFor="groupDescription">Descrição</Label>
-                        <Input 
-                          id="groupDescription" 
-                          placeholder="Descrição do grupo" 
-                          value={newGroup.description}
-                          onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsCreateGroupModalOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateGroup}>
-                        Criar Grupo
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  ))
+                )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="grid gap-4">
-                {groups.map((group) => (
-                  <Card key={group.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{group.name}</h3>
-                          <p className="text-sm text-gray-600">{group.members} membro(s)</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Projetos: {group.projects.join(", ")}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-red-600">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+        <TabsContent value="system" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações do Sistema</CardTitle>
+              <CardDescription>Configure as preferências gerais do sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="orgName">Nome da Organização</Label>
+                  <Input id="orgName" placeholder="Nome da sua empresa" />
+                </div>
+                <div>
+                  <Label htmlFor="timezone">Fuso Horário</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o fuso horário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="america/sao_paulo">America/São Paulo</SelectItem>
+                      <SelectItem value="america/new_york">America/New York</SelectItem>
+                      <SelectItem value="europe/london">Europe/London</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button>Salvar Configurações</Button>
               </div>
-            </TabsContent>
-          </Tabs>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-        <Button variant="outline">Cancelar</Button>
-        <Button>Salvar Configurações</Button>
-      </div>
     </div>
   );
-};
-
-export default Config;
+}

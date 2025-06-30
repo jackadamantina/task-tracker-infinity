@@ -256,6 +256,30 @@ export type Database = {
           },
         ]
       }
+      groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       imported_users_idm: {
         Row: {
           created_at: string
@@ -289,6 +313,118 @@ export type Database = {
           status?: string | null
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      kanban_cards: {
+        Row: {
+          assignee_id: string | null
+          attachments: number | null
+          column_id: string | null
+          created_at: string
+          dependencies: string[] | null
+          description: string | null
+          estimated_completion_date: string | null
+          id: string
+          priority: string
+          project_id: string | null
+          start_time: string | null
+          subtasks_completed: number | null
+          subtasks_total: number | null
+          tags: string[] | null
+          time_spent: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          attachments?: number | null
+          column_id?: string | null
+          created_at?: string
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_completion_date?: string | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          start_time?: string | null
+          subtasks_completed?: number | null
+          subtasks_total?: number | null
+          tags?: string[] | null
+          time_spent?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          attachments?: number | null
+          column_id?: string | null
+          created_at?: string
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_completion_date?: string | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          start_time?: string | null
+          subtasks_completed?: number | null
+          subtasks_total?: number | null
+          tags?: string[] | null
+          time_spent?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_cards_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "system_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_cards_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_cards_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_columns: {
+        Row: {
+          color: string | null
+          created_at: string
+          header_color: string | null
+          id: string
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          header_color?: string | null
+          id?: string
+          position?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          header_color?: string | null
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -471,6 +607,111 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          permissions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          permissions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          permissions?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_users: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string
+          group_id: string | null
+          id: string
+          name: string
+          profile_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email: string
+          group_id?: string | null
+          id?: string
+          name: string
+          profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string
+          group_id?: string | null
+          id?: string
+          name?: string
+          profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_users_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_users_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_users_idm: {
         Row: {
