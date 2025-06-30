@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -66,6 +65,9 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
       estimatedCompletionDate: "",
     },
   });
+
+  // Obter a data atual no formato YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (card) {
@@ -280,7 +282,11 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                       <FormControl>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <Input type="date" {...field} />
+                          <Input 
+                            type="date" 
+                            {...field} 
+                            min={today}
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
