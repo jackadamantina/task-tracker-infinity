@@ -31,9 +31,10 @@ interface Card {
 interface DroppableKanbanColumnProps {
   column: Column;
   cards: Card[];
+  onCardDoubleClick?: (card: Card) => void;
 }
 
-export function DroppableKanbanColumn({ column, cards }: DroppableKanbanColumnProps) {
+export function DroppableKanbanColumn({ column, cards, onCardDoubleClick }: DroppableKanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: column.id,
   });
@@ -65,7 +66,11 @@ export function DroppableKanbanColumn({ column, cards }: DroppableKanbanColumnPr
       >
         <SortableContext items={cards.map(card => card.id)} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <DraggableKanbanCard key={card.id} card={card} />
+            <DraggableKanbanCard 
+              key={card.id} 
+              card={card} 
+              onCardDoubleClick={onCardDoubleClick}
+            />
           ))}
         </SortableContext>
         
