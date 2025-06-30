@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Kanban, ChartGantt, BarChart, TrendingUp, Mail, Target, Settings } from "lucide-react";
@@ -42,9 +43,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="bg-white border-r border-gray-200 shadow-sm">
       <SidebarHeader className="border-b border-gray-100 p-6 bg-white">
-        <div className="flex flex-col items-start">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Task Tracker Dashboard</h1>
-          <p className="text-sm text-gray-500">Tarefas e projetos</p>
+        <div className="flex items-center gap-3">
+          <TaskTrackerLogo size="sm" showText={false} />
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Task Tracker</h1>
+            <p className="text-sm text-gray-500">Tarefas e projetos</p>
+          </div>
         </div>
       </SidebarHeader>
 
