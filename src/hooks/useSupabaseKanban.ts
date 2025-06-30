@@ -87,7 +87,7 @@ export function useSupabaseKanban() {
 
   const fetchCards = async () => {
     try {
-      console.log('=== INICIANDO BUSCA DE CARDS ===');
+      console.log('=== INICIANDO BUSCA DE CARDS NO SUPABASE ===');
       setLoading(true);
       
       const { data, error } = await supabase
@@ -99,8 +99,8 @@ export function useSupabaseKanban() {
         `)
         .order('created_at');
 
-      console.log('=== RESULTADO DA QUERY ===');
-      console.log('Data:', data);
+      console.log('=== RESULTADO DA QUERY SUPABASE ===');
+      console.log('Data recebida:', data);
       console.log('Error:', error);
 
       if (error) {
@@ -109,7 +109,7 @@ export function useSupabaseKanban() {
       }
       
       const formattedCards = data?.map(card => {
-        console.log('Formatando card:', card.id, card.title);
+        console.log('Formatando card do Supabase:', card.id, card.title, 'coluna:', card.column_id);
         return {
           ...card,
           assignee: card.system_users ? {
@@ -120,13 +120,15 @@ export function useSupabaseKanban() {
         };
       }) || [];
       
-      console.log('=== CARDS FORMATADOS ===');
+      console.log('=== CARDS FORMATADOS DO SUPABASE ===');
       console.log('Total de cards formatados:', formattedCards.length);
       formattedCards.forEach(card => {
-        console.log(`Card: ${card.title} | Coluna: ${card.column_id} | Projeto: ${card.project_id}`);
+        console.log(`Card: ${card.title} | Coluna UUID: ${card.column_id} | Projeto: ${card.project_id}`);
       });
       
       setCards(formattedCards);
+      console.log('=== CARDS SALVOS NO STATE ===');
+      
     } catch (error) {
       console.error('=== ERRO AO BUSCAR CARDS ===');
       console.error('Erro:', error);
@@ -156,7 +158,7 @@ export function useSupabaseKanban() {
         throw error;
       }
 
-      console.log('=== CARD CRIADO COM SUCESSO ===');
+      console.log('=== CARD CRIADO COM SUCESSO NO SUPABASE ===');
       console.log('Card retornado:', data);
 
       const formattedCard = {
@@ -168,10 +170,11 @@ export function useSupabaseKanban() {
         project: data.projects
       };
 
-      console.log('=== ADICIONANDO CARD AO STATE ===');
+      console.log('=== ADICIONANDO CARD AO STATE LOCAL ===');
       setCards(prev => {
         const newCards = [...prev, formattedCard];
         console.log('Total de cards após adição:', newCards.length);
+        console.log('Cards no state:', newCards.map(c => ({ id: c.id, title: c.title, column: c.column_id })));
         return newCards;
       });
       
@@ -261,7 +264,7 @@ export function useSupabaseKanban() {
 
   useEffect(() => {
     const initializeData = async () => {
-      console.log('=== INICIALIZANDO DADOS ===');
+      console.log('=== INICIALIZANDO DADOS DO SUPABASE ===');
       await Promise.all([
         fetchColumns(),
         fetchProjects(),

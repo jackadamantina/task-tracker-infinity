@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSupabaseKanban, KanbanCard } from "./useSupabaseKanban";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,139 +7,122 @@ import { Card } from "@/types/kanban";
 export function useKanbanCards() {
   const { cards: supabaseCards, createCard, updateCard, deleteCard, refetch } = useSupabaseKanban();
   const [cards, setCards] = useState<Card[]>([]);
-  const [columnMapping, setColumnMapping] = useState<{[key: string]: string}>({});
-  const [reverseColumnMapping, setReverseColumnMapping] = useState<{[key: string]: string}>({});
-
-  // Buscar mapeamento de colunas
-  useEffect(() => {
-    const fetchColumnMapping = async () => {
-      try {
-        const { data: columns } = await supabase.from('kanban_columns').select('id, title');
-        console.log('Colunas do banco:', columns);
-        
-        if (columns) {
-          const mapping: {[key: string]: string} = {};
-          const reverseMapping: {[key: string]: string} = {};
-          
-          columns.forEach(col => {
-            const normalizedTitle = col.title.toLowerCase().trim();
-            console.log('Processando coluna:', col.title, 'normalizada:', normalizedTitle);
-            
-            switch(normalizedTitle) {
-              case 'backlog':
-                mapping[col.id] = 'todo';
-                reverseMapping['todo'] = col.id;
-                break;
-              case 'em progresso':
-                mapping[col.id] = 'in-progress';
-                reverseMapping['in-progress'] = col.id;
-                break;
-              case 'em revisão':
-                mapping[col.id] = 'review';
-                reverseMapping['review'] = col.id;
-                break;
-              case 'concluído':
-                mapping[col.id] = 'done';
-                reverseMapping['done'] = col.id;
-                break;
-              default:
-                mapping[col.id] = 'todo';
-            }
-          });
-          
-          setColumnMapping(mapping);
-          setReverseColumnMapping(reverseMapping);
-          console.log('Column mapping loaded:', mapping);
-          console.log('Reverse column mapping:', reverseMapping);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar mapeamento de colunas:', error);
-      }
-    };
-
-    fetchColumnMapping();
-  }, []);
 
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
-    console.log('=== EFEITO DE CONVERSÃO ===');
-    console.log('supabaseCards length:', supabaseCards.length);
-    console.log('columnMapping keys:', Object.keys(columnMapping).length);
+    console.log('=== USEKANBAN CARDS: CONVERSÃO INICIADA ===');
+    console.log('Supabase cards recebidos:', supabaseCards.length);
     
-    if (Object.keys(columnMapping).length === 0) {
-      console.log('Aguardando mapeamento de colunas...');
+    if (supabaseCards.length === 0) {
+      console.log('Nenhum card do Supabase, definindo array vazio');
+      setCards([]);
       return;
     }
 
-    console.log('Convertendo', supabaseCards.length, 'cards...');
-    
-    const convertedCards: Card[] = supabaseCards.map((card) => {
-      console.log('Convertendo card:', card.id, card.title, 'coluna:', card.column_id);
+    const convertedCards: Card[] = supabaseCards.map((supabaseCard) => {
+      console.log('Convertendo card:', supabaseCard.id, supabaseCard.title);
+      console.log('Column ID do Supabase:', supabaseCard.column_id);
       
-      // Gerar ID numérico baseado no UUID
-      const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
+      // Converter UUID para ID numérico
+      const numericId = parseInt(supabaseCard.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
       
-      const mappedColumn = columnMapping[card.column_id || ''] || 'todo';
-      console.log('Card column_id:', card.column_id, 'mapeado para:', mappedColumn);
+      // Mapear column_id para o formato esperado
+      let columnName = 'todo'; // default
       
-      return {
+      // Usar uma query simples para buscar o título da coluna
+      supabase
+        .from('kanban_columns')
+        .select('title')
+        .eq('id', supabaseCard.column_id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            console.log('Título da coluna encontrado:', data.title);
+          }
+        });
+      
+      // Mapeamento direto baseado nos IDs conhecidos das colunas
+      if (supabaseCard.column_id === 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0') {
+        columnName = 'todo';
+      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174001') {
+        columnName = 'in-progress';
+      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174002') {
+        columnName = 'review';
+      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174003') {
+        columnName = 'done';
+      }
+      
+      console.log('Card mapeado para coluna:', columnName);
+      
+      const convertedCard: Card = {
         id: numericId,
-        title: card.title,
-        description: card.description || "",
-        column: mappedColumn,
-        priority: card.priority,
+        title: supabaseCard.title,
+        description: supabaseCard.description || "",
+        column: columnName,
+        priority: supabaseCard.priority,
         assignee: {
-          name: card.assignee?.name || "Não atribuído",
-          avatar: card.assignee?.avatar || "/placeholder.svg"
+          name: supabaseCard.assignee?.name || "Não atribuído",
+          avatar: supabaseCard.assignee?.avatar || "/placeholder.svg"
         },
-        attachments: card.attachments,
+        attachments: supabaseCard.attachments,
         subtasks: {
-          completed: card.subtasks_completed,
-          total: card.subtasks_total
+          completed: supabaseCard.subtasks_completed,
+          total: supabaseCard.subtasks_total
         },
-        dependencies: card.dependencies.map(dep => parseInt(dep.replace(/-/g, '').substring(0, 8), 16)).filter(Boolean),
+        dependencies: [],
         blocked: false,
-        timeSpent: card.time_spent,
-        tags: card.tags,
-        startTime: card.start_time ? new Date(card.start_time) : undefined,
+        timeSpent: supabaseCard.time_spent,
+        tags: supabaseCard.tags || [],
+        startTime: supabaseCard.start_time ? new Date(supabaseCard.start_time) : undefined,
         completedTime: undefined,
         executionTime: 0,
-        estimatedCompletionDate: card.estimated_completion_date ? new Date(card.estimated_completion_date) : undefined,
-        projectId: card.project_id || 'default-project'
+        estimatedCompletionDate: supabaseCard.estimated_completion_date ? new Date(supabaseCard.estimated_completion_date) : undefined,
+        projectId: supabaseCard.project_id || 'sistema-ecommerce'
       };
+      
+      console.log('Card convertido:', convertedCard);
+      return convertedCard;
     });
     
-    console.log('=== RESULTADO DA CONVERSÃO ===');
-    console.log('Cards convertidos:', convertedCards.length);
-    console.log('Cards por coluna:', {
-      todo: convertedCards.filter(c => c.column === 'todo').length,
-      'in-progress': convertedCards.filter(c => c.column === 'in-progress').length,
-      review: convertedCards.filter(c => c.column === 'review').length,
-      done: convertedCards.filter(c => c.column === 'done').length
-    });
+    console.log('=== RESULTADO FINAL DA CONVERSÃO ===');
+    console.log('Total de cards convertidos:', convertedCards.length);
+    console.log('Cards por coluna:');
+    console.log('- todo:', convertedCards.filter(c => c.column === 'todo').length);
+    console.log('- in-progress:', convertedCards.filter(c => c.column === 'in-progress').length);
+    console.log('- review:', convertedCards.filter(c => c.column === 'review').length);
+    console.log('- done:', convertedCards.filter(c => c.column === 'done').length);
     
     setCards(convertedCards);
-  }, [supabaseCards, columnMapping]);
+  }, [supabaseCards]);
 
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
-      console.log('=== INICIANDO CRIAÇÃO DE CARD ===');
+      console.log('=== CRIANDO NOVO CARD ===');
       console.log('Dados recebidos:', newCardData);
       
-      // Buscar ID da coluna usando o mapeamento reverso
-      const columnId = reverseColumnMapping[newCardData.column];
-      console.log('Column mapeada:', newCardData.column, 'para UUID:', columnId);
+      // Mapear coluna para UUID
+      let columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0'; // default para 'todo'
       
-      if (!columnId) {
-        console.error('Coluna não encontrada:', newCardData.column);
-        console.error('Mapeamento disponível:', reverseColumnMapping);
-        throw new Error(`Coluna não encontrada: ${newCardData.column}`);
+      switch(newCardData.column) {
+        case 'todo':
+          columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
+          break;
+        case 'in-progress':
+          columnId = '123e4567-e89b-12d3-a456-426614174001';
+          break;
+        case 'review':
+          columnId = '123e4567-e89b-12d3-a456-426614174002';
+          break;
+        case 'done':
+          columnId = '123e4567-e89b-12d3-a456-426614174003';
+          break;
       }
+      
+      console.log('Column mapeada:', newCardData.column, 'para UUID:', columnId);
       
       // Buscar um projeto válido
       const { data: projects } = await supabase.from('projects').select('id').limit(1);
       const projectId = projects && projects.length > 0 ? projects[0].id : null;
-      console.log('Projeto selecionado:', projectId);
       
       const supabaseCardData = {
         title: newCardData.title,
@@ -157,30 +141,37 @@ export function useKanbanCards() {
         start_time: newCardData.startTime?.toISOString() || null
       };
 
-      console.log('=== ENVIANDO PARA SUPABASE ===');
-      console.log('Dados para Supabase:', supabaseCardData);
+      console.log('Enviando para Supabase:', supabaseCardData);
       
-      const createdCard = await createCard(supabaseCardData);
-      console.log('=== CARD CRIADO NO BANCO ===');
-      console.log('Card criado:', createdCard);
+      await createCard(supabaseCardData);
       
-      // O card já foi adicionado ao state pelo createCard, não precisa fazer refetch
-      console.log('=== CRIAÇÃO CONCLUÍDA (sem refetch necessário) ===');
+      console.log('Card criado com sucesso, fazendo refetch...');
+      await refetch();
       
     } catch (error) {
-      console.error('=== ERRO AO CRIAR CARD ===');
-      console.error('Erro:', error);
+      console.error('Erro ao criar card:', error);
       throw error;
     }
   };
 
   const handleCardSave = async (updatedCard: Card) => {
     try {
-      const columnId = reverseColumnMapping[updatedCard.column];
+      // Mapear coluna para UUID
+      let columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
       
-      if (!columnId) {
-        console.error('Coluna não encontrada para update:', updatedCard.column);
-        return;
+      switch(updatedCard.column) {
+        case 'todo':
+          columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
+          break;
+        case 'in-progress':
+          columnId = '123e4567-e89b-12d3-a456-426614174001';
+          break;
+        case 'review':
+          columnId = '123e4567-e89b-12d3-a456-426614174002';
+          break;
+        case 'done':
+          columnId = '123e4567-e89b-12d3-a456-426614174003';
+          break;
       }
       
       const supabaseUpdates = {
