@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { TaskTrackerLogo } from "@/components/TaskTrackerLogo";
 
 export default function Dashboard() {
   // Mock data - em produção viria de uma API
@@ -45,9 +46,12 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+        <div className="flex items-center gap-4">
+          <TaskTrackerLogo size="md" showText={false} />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+          </div>
         </div>
       </div>
 
