@@ -22,7 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus, Upload, Trash2, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Card, mockCards } from "@/utils/kanbanUtils";
+import { Card, mockCards } from "@/data/mockCards";
 
 interface CardEditModalProps {
   card: Card | null;
@@ -286,9 +286,11 @@ export function CardEditModal({ card, isOpen, onClose, onSave }: CardEditModalPr
                             type="date" 
                             {...field} 
                             min={today}
+                            className="flex-1"
                           />
                         </div>
                       </FormControl>
+                      <p className="text-xs text-gray-500">Não é possível selecionar datas passadas</p>
                       <FormMessage />
                     </FormItem>
                   )}
