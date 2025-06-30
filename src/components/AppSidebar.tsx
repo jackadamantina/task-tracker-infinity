@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Kanban, ChartGantt } from "lucide-react";
+import { LayoutDashboard, Users, Kanban, ChartGantt, BarChart, TrendingUp, Mail, Target, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,10 +17,12 @@ import {
 import { TaskTrackerLogo } from "./TaskTrackerLogo";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Usuários", url: "/usuarios", icon: Users },
-  { title: "Kanban", url: "/kanban", icon: Kanban },
-  { title: "Relatórios", url: "/relatorios", icon: ChartGantt },
+  { title: "Visão Geral", url: "/", icon: BarChart },
+  { title: "Análise de Campanhas", url: "/usuarios", icon: TrendingUp },
+  { title: "Avaliador de Email", url: "/kanban", icon: Mail },
+  { title: "Testes A/B", url: "/testes", icon: Target },
+  { title: "Reputação RBL", url: "/relatorios", icon: ChartGantt },
+  { title: "Configurações", url: "/config", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -36,20 +38,20 @@ export function AppSidebar() {
 
   const getNavCls = (isActiveRoute: boolean) =>
     isActiveRoute 
-      ? "gradient-accent text-gray-800 shadow-lg shadow-yellow font-bold border-l-4 border-yellow-500 transform scale-[1.02]" 
-      : "hover:bg-gray-50 text-gray-600 hover:text-blue-600 hover:border-l-4 hover:border-blue-400 hover:shadow-md transition-all duration-300 hover:transform hover:scale-[1.01]";
+      ? "bg-yellow-400 text-gray-900 shadow-lg font-bold border-l-4 border-yellow-600 transform scale-[1.02] rounded-r-lg" 
+      : "hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-all duration-200 rounded-lg";
 
   return (
-    <Sidebar className="bg-white border-r border-gray-200 shadow-lg">
+    <Sidebar className="bg-white border-r border-gray-200 shadow-sm">
       <SidebarHeader className="border-b border-gray-100 p-6 bg-white">
-        <TaskTrackerLogo collapsed={collapsed} />
+        <div className="flex flex-col items-start">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">ScoreBox Dashboard</h1>
+          <p className="text-sm text-gray-500">Plataforma de Email Marketing</p>
+        </div>
       </SidebarHeader>
 
-      <SidebarContent className="bg-white">
-        <SidebarGroup className="px-4 py-8">
-          <SidebarGroupLabel className="text-xs font-bold text-gray-500 uppercase tracking-widest px-3 py-4 mb-4 bg-gray-50 rounded-lg border border-gray-100">
-            Menu Principal
-          </SidebarGroupLabel>
+      <SidebarContent className="bg-white p-4">
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
@@ -58,10 +60,10 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 ${getNavCls(isActive)}`}
+                      className={({ isActive }) => `flex items-center gap-4 px-4 py-4 transition-all duration-200 ${getNavCls(isActive)}`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="font-semibold text-sm tracking-wide">{item.title}</span>}
+                      {!collapsed && <span className="font-medium text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -1,13 +1,15 @@
 
 import { useState } from "react";
+import { DndContext, DragEndEvent, DragOverEvent, closestCorners } from '@dnd-kit/core';
 import { KanbanHeader } from "@/components/kanban/KanbanHeader";
-import { KanbanColumn } from "@/components/kanban/KanbanColumn";
+import { DroppableKanbanColumn } from "@/components/kanban/DroppableKanbanColumn";
 import { 
   getCardsByColumn, 
   mockProjects, 
   defaultColumns, 
   mockCards,
-  type Column
+  type Column,
+  type Card
 } from "@/utils/kanbanUtils";
 
 export default function Kanban() {
@@ -16,6 +18,7 @@ export default function Kanban() {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
+  const [cards, setCards] = useState<Card[]>(mockCards);
 
   const handleAddColumn = () => {
     if (newColumnName.trim()) {
@@ -28,6 +31,46 @@ export default function Kanban() {
       setColumns([...columns, newColumn]);
       setNewColumnName("");
       setShowColumnDialog(false);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as number;
+    const overId = over.id as string;
+
+    // Se o drop foi sobre uma coluna
+    if (columns.some(col => col.id === overId)) {
+      setCards(prevCards => 
+        prevCards.map(card => 
+          card.id === activeId 
+            ? { ...card, column: overId }
+            : card
+        )
+      );
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as number;
+    const overId = over.id;
+
+    // Se estamos arrastando sobre uma coluna
+    if (typeof overId === 'string' && columns.some(col => col.id === overId)) {
+      setCards(prevCards => 
+        prevCards.map(card => 
+          card.id === activeId 
+            ? { ...card, column: overId }
+            : card
+        )
+      );
     }
   };
 
@@ -46,16 +89,21 @@ export default function Kanban() {
         handleAddColumn={handleAddColumn}
       />
 
-      {/* Kanban Board */}
-      <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(300px, 1fr))` }}>
-        {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            cards={getCardsByColumn(mockCards, column.id)}
-          />
-        ))}
-      </div>
+      <DndContext 
+        collisionDetection={closestCorners}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+      >
+        <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(300px, 1fr))` }}>
+          {columns.map((column) => (
+            <DroppableKanbanColumn
+              key={column.id}
+              column={column}
+              cards={getCardsByColumn(cards, column.id)}
+            />
+          ))}
+        </div>
+      </DndContext>
     </div>
   );
 }
