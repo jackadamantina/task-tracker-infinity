@@ -36,32 +36,32 @@ export function AppSidebar() {
 
   const getNavCls = (isActiveRoute: boolean) =>
     isActiveRoute 
-      ? "bg-blue-100 text-blue-900 border-r-2 border-blue-600 font-medium" 
-      : "hover:bg-gray-100 text-gray-700";
+      ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg shadow-yellow-400/30 font-semibold border-l-4 border-yellow-600" 
+      : "hover:bg-yellow-50 text-gray-700 hover:text-yellow-700 hover:border-l-4 hover:border-yellow-300 transition-all duration-200";
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <SidebarHeader className="border-b border-gray-200 p-4">
+    <Sidebar className="bg-white border-r border-yellow-200 shadow-lg">
+      <SidebarHeader className="border-b border-yellow-100 p-6 bg-gradient-to-br from-yellow-50 to-amber-50">
         <TaskTrackerLogo collapsed={collapsed} />
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
+      <SidebarContent className="bg-white">
+        <SidebarGroup className="px-4 py-6">
+          <SidebarGroupLabel className="text-xs font-bold text-yellow-700 uppercase tracking-wider px-3 py-3 mb-2">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${getNavCls(isActive)}`}
+                      className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${getNavCls(isActive)}`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="font-medium">{item.title}</span>}
+                      {!collapsed && <span className="font-medium text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

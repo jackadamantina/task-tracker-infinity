@@ -7,15 +7,17 @@ interface TaskTrackerLogoProps {
 
 export function TaskTrackerLogo({ collapsed = false }: TaskTrackerLogoProps) {
   return (
-    <div className="flex items-center gap-2 p-2">
+    <div className="flex items-center gap-3 p-2">
       <div className="relative">
-        <CheckSquare className="h-8 w-8 text-blue-600" />
-        <Target className="h-4 w-4 text-green-500 absolute -top-1 -right-1" />
+        <div className="bg-gradient-to-br from-yellow-400 to-amber-500 p-2 rounded-xl shadow-lg">
+          <CheckSquare className="h-6 w-6 text-white" />
+        </div>
+        <Target className="h-3 w-3 text-yellow-600 absolute -top-1 -right-1 bg-white rounded-full p-0.5" />
       </div>
       {!collapsed && (
         <div className="flex flex-col">
-          <span className="text-lg font-bold text-gray-900 leading-tight">Task</span>
-          <span className="text-sm font-medium text-blue-600 leading-tight">Tracker</span>
+          <span className="text-xl font-bold text-gray-800 leading-tight">Task</span>
+          <span className="text-sm font-semibold text-yellow-600 leading-tight">Tracker</span>
         </div>
       )}
     </div>
