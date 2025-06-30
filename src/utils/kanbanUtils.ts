@@ -1,4 +1,3 @@
-
 export interface Card {
   id: number;
   title: string;
@@ -47,7 +46,11 @@ export const getCardsByProject = (cards: Card[], projectId: string): Card[] => {
 
 export const isCardOverdue = (card: Card): boolean => {
   if (!card.estimatedCompletionDate) return false;
-  return new Date() > card.estimatedCompletionDate && card.column !== 'done';
+  const currentDate = new Date();
+  const estimatedDate = new Date(card.estimatedCompletionDate);
+  
+  // Only consider overdue if current date is AFTER estimated completion date AND card is not done
+  return currentDate > estimatedDate && card.column !== 'done';
 };
 
 export const getOverdueCards = (cards: Card[]): Card[] => {
