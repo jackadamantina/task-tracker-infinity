@@ -29,7 +29,9 @@ export function useProfiles() {
       // Converter dados do Supabase para o tipo esperado
       const formattedProfiles: Profile[] = (data || []).map(profile => ({
         ...profile,
-        permissions: Array.isArray(profile.permissions) ? profile.permissions : []
+        permissions: Array.isArray(profile.permissions) 
+          ? profile.permissions.map(p => String(p))
+          : []
       }));
       
       setProfiles(formattedProfiles);
@@ -62,7 +64,9 @@ export function useProfiles() {
       // Converter dados do Supabase para o tipo esperado
       const formattedProfile: Profile = {
         ...data,
-        permissions: Array.isArray(data.permissions) ? data.permissions : []
+        permissions: Array.isArray(data.permissions) 
+          ? data.permissions.map(p => String(p))
+          : []
       };
       
       setProfiles(prev => [...prev, formattedProfile]);

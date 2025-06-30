@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +54,7 @@ export function useSupabaseKanban() {
         .order('position');
 
       if (error) throw error;
+      console.log('Colunas carregadas:', data);
       setColumns(data || []);
     } catch (error) {
       console.error('Erro ao buscar colunas:', error);
@@ -69,6 +69,7 @@ export function useSupabaseKanban() {
         .order('name');
 
       if (error) throw error;
+      console.log('Projetos carregados:', data);
       setProjects(data || []);
     } catch (error) {
       console.error('Erro ao buscar projetos:', error);
@@ -97,6 +98,7 @@ export function useSupabaseKanban() {
         project: card.projects
       })) || [];
       
+      console.log('Cards carregados:', formattedCards);
       setCards(formattedCards);
     } catch (error) {
       console.error('Erro ao buscar cards:', error);
@@ -107,22 +109,11 @@ export function useSupabaseKanban() {
 
   const createCard = async (cardData: Omit<KanbanCard, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('Criando card no Supabase:', cardData);
+      
       const { data, error } = await supabase
         .from('kanban_cards')
-        .insert([{
-          title: cardData.title,
-          description: cardData.description,
-          column_id: cardData.column_id,
-          project_id: cardData.project_id,
-          assignee_id: cardData.assignee_id,
-          priority: cardData.priority,
-          tags: cardData.tags,
-          dependencies: cardData.dependencies,
-          attachments: cardData.attachments,
-          subtasks_completed: cardData.subtasks_completed,
-          subtasks_total: cardData.subtasks_total,
-          estimated_completion_date: cardData.estimated_completion_date
-        }])
+        .insert([cardData])
         .select(`
           *,
           system_users!assignee_id(name, avatar),
@@ -130,7 +121,10 @@ export function useSupabaseKanban() {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro SQL:', error);
+        throw error;
+      }
 
       const formattedCard = {
         ...data,
