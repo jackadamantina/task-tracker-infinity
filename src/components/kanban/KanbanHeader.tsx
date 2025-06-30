@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,15 +57,14 @@ export function KanbanHeader({
   const [showCycleTimeChart, setShowCycleTimeChart] = useState(false);
 
   const mockTeamMembers = [
-    "Todos", "João Silva", "Maria Santos", "Pedro Costa", "Ana Costa", "Carlos Lima"
+    "João Silva", "Maria Santos", "Pedro Costa", "Ana Costa", "Carlos Lima"
   ];
 
   const mockTeams = [
-    "Todos", "Frontend", "Backend", "DevOps", "QA", "Design"
+    "Frontend", "Backend", "DevOps", "QA", "Design"
   ];
 
   const statusOptions = [
-    { value: "", label: "Todos os Status" },
     { value: "todo", label: "A Fazer" },
     { value: "in-progress", label: "Em Andamento" },
     { value: "review", label: "Em Revisão" },
@@ -182,13 +182,14 @@ export function KanbanHeader({
             {/* Filtro por Pessoa */}
             <div>
               <label className="text-sm font-medium mb-2 block">Pessoa</label>
-              <Select value={filterPerson} onValueChange={setFilterPerson}>
+              <Select value={filterPerson || "all"} onValueChange={(value) => setFilterPerson(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por pessoa" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todas as Pessoas</SelectItem>
                   {mockTeamMembers.map((member) => (
-                    <SelectItem key={member} value={member === "Todos" ? "" : member}>
+                    <SelectItem key={member} value={member}>
                       {member}
                     </SelectItem>
                   ))}
@@ -199,13 +200,14 @@ export function KanbanHeader({
             {/* Filtro por Time */}
             <div>
               <label className="text-sm font-medium mb-2 block">Time</label>
-              <Select value={filterTeam} onValueChange={setFilterTeam}>
+              <Select value={filterTeam || "all"} onValueChange={(value) => setFilterTeam(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por time" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos os Times</SelectItem>
                   {mockTeams.map((team) => (
-                    <SelectItem key={team} value={team === "Todos" ? "" : team}>
+                    <SelectItem key={team} value={team}>
                       {team}
                     </SelectItem>
                   ))}
@@ -216,11 +218,12 @@ export function KanbanHeader({
             {/* Filtro por Status */}
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por status" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
                   {statusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
