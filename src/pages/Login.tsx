@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TaskTrackerLogo } from "@/components/TaskTrackerLogo";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Info } from "lucide-react";
+import { authenticateUser, DEFAULT_CREDENTIALS } from "@/utils/authUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginProps {
   onLogin: () => void;
@@ -15,16 +17,35 @@ export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simular autenticação
     setTimeout(() => {
+      const user = authenticateUser(email, password);
+      
+      if (user) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo, ${user.name}!`,
+        });
+        onLogin();
+      } else {
+        toast({
+          title: "Erro no login",
+          description: "Email ou senha incorretos.",
+          variant: "destructive",
+        });
+      }
       setIsLoading(false);
-      onLogin();
     }, 1000);
+  };
+
+  const fillDefaultCredentials = () => {
+    setEmail(DEFAULT_CREDENTIALS.email);
+    setPassword(DEFAULT_CREDENTIALS.password);
   };
 
   return (
@@ -37,6 +58,26 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem-vindo de volta</h1>
             <p className="text-gray-600">Entre na sua conta para continuar</p>
+            
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 text-blue-700 mb-2">
+                <Info className="h-4 w-4" />
+                <span className="font-medium text-sm">Credenciais de teste:</span>
+              </div>
+              <div className="text-sm text-blue-600 space-y-1">
+                <p><strong>Email:</strong> {DEFAULT_CREDENTIALS.email}</p>
+                <p><strong>Senha:</strong> {DEFAULT_CREDENTIALS.password}</p>
+              </div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={fillDefaultCredentials}
+                className="mt-2 text-xs"
+              >
+                Preencher automaticamente
+              </Button>
+            </div>
           </CardHeader>
           
           <CardContent className="pt-6">
@@ -78,16 +119,6 @@ export default function Login({ onLogin }: LoginProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4 text-blue-600 rounded border-gray-300" />
-                  <span className="text-sm text-gray-600">Lembrar-me</span>
-                </label>
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
-                  Esqueceu a senha?
-                </a>
-              </div>
-
               <Button
                 type="submit"
                 className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg"
@@ -96,15 +127,6 @@ export default function Login({ onLogin }: LoginProps) {
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Não tem uma conta?{" "}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Cadastre-se
-                </a>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
