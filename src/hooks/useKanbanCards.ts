@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/types/kanban";
 
 export function useKanbanCards() {
-  const { cards: supabaseCards, createCard, updateCard, deleteCard } = useSupabaseKanban();
+  const { cards: supabaseCards, createCard, updateCard, deleteCard, refetch } = useSupabaseKanban();
   const [cards, setCards] = useState<Card[]>([]);
   const [columnMapping, setColumnMapping] = useState<{[key: string]: string}>({});
   const [reverseColumnMapping, setReverseColumnMapping] = useState<{[key: string]: string}>({});
@@ -136,6 +136,11 @@ export function useKanbanCards() {
 
       console.log('Dados para Supabase:', supabaseCardData);
       await createCard(supabaseCardData);
+      
+      // Forçar uma nova busca dos dados para garantir que o card aparece
+      console.log('Recarregando dados após criação...');
+      await refetch();
+      
     } catch (error) {
       console.error('Erro ao criar card:', error);
       throw error;

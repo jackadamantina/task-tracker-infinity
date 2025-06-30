@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export function AddCardModal({ isOpen, onClose, onSave, columnId, projectId }: A
       const newCard: Omit<Card, 'id'> = {
         title: formData.title,
         description: formData.description,
-        column: columnId, // Usar o columnId diretamente
+        column: columnId,
         priority: formData.priority,
         assignee: selectedAssignee,
         attachments: 0,
@@ -60,7 +61,10 @@ export function AddCardModal({ isOpen, onClose, onSave, columnId, projectId }: A
         timeSpent: 0,
         tags: formData.tags,
         estimatedCompletionDate: formData.estimatedCompletionDate,
-        projectId: projectId
+        projectId: projectId,
+        startTime: undefined,
+        completedTime: undefined,
+        executionTime: 0
       };
 
       console.log('Dados do novo card:', newCard);
