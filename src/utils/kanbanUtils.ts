@@ -1,4 +1,3 @@
-
 export interface Card {
   id: number;
   title: string;
@@ -28,10 +27,10 @@ export const getCardsByColumn = (cards: Card[], columnId: string): Card[] => {
 export const mockProjects = ["Sistema E-commerce", "App Mobile", "Dashboard Analytics"];
 
 export const defaultColumns: Column[] = [
-  { id: "todo", title: "A Fazer", color: "bg-blue-50 border-blue-200", headerColor: "bg-blue-100" },
-  { id: "in-progress", title: "Em Andamento", color: "bg-amber-50 border-amber-200", headerColor: "bg-amber-100" },
-  { id: "review", title: "Em Revisão", color: "bg-purple-50 border-purple-200", headerColor: "bg-purple-100" },
-  { id: "done", title: "Concluído", color: "bg-green-50 border-green-200", headerColor: "bg-green-100" }
+  { id: "todo", title: "A Fazer", color: "bg-white border-gray-200", headerColor: "bg-gray-50" },
+  { id: "in-progress", title: "Em Andamento", color: "bg-white border-gray-200", headerColor: "bg-gray-50" },
+  { id: "review", title: "Em Revisão", color: "bg-white border-gray-200", headerColor: "bg-gray-50" },
+  { id: "done", title: "Concluído", color: "bg-white border-gray-200", headerColor: "bg-gray-50" }
 ];
 
 export const mockCards: Card[] = [

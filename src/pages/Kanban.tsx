@@ -22,8 +22,8 @@ export default function Kanban() {
       const newColumn: Column = {
         id: `col-${Date.now()}`,
         title: newColumnName,
-        color: "bg-gray-50 border-gray-200",
-        headerColor: "bg-gray-100"
+        color: "bg-white border-gray-200",
+        headerColor: "bg-gray-50"
       };
       setColumns([...columns, newColumn]);
       setNewColumnName("");
@@ -32,7 +32,7 @@ export default function Kanban() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-amber-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <KanbanHeader
         selectedProject={selectedProject}
         setSelectedProject={setSelectedProject}
@@ -47,7 +47,7 @@ export default function Kanban() {
       />
 
       {/* Kanban Board */}
-      <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(320px, 1fr))` }}>
+      <div className={`grid gap-6 min-h-[700px]`} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(300px, 1fr))` }}>
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}
