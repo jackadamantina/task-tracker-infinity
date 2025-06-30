@@ -7,6 +7,8 @@ interface TaskTrackerLogoProps {
 }
 
 export function TaskTrackerLogo({ size = "md", showText = true }: TaskTrackerLogoProps) {
+  console.log("TaskTrackerLogo renderizando com props:", { size, showText });
+  
   const sizes = {
     sm: { icon: "h-6 w-6", text: "text-xl", container: "gap-2 p-2" },
     md: { icon: "h-8 w-8", text: "text-2xl", container: "gap-3 p-3" },
