@@ -7,14 +7,53 @@ import { Card } from "@/types/kanban";
 export function useKanbanCards() {
   const { cards: supabaseCards, createCard, updateCard, deleteCard } = useSupabaseKanban();
   const [cards, setCards] = useState<Card[]>([]);
+  const [columnMapping, setColumnMapping] = useState<{[key: string]: string}>({});
+
+  // Buscar mapeamento de colunas
+  useEffect(() => {
+    const fetchColumnMapping = async () => {
+      try {
+        const { data: columns } = await supabase.from('kanban_columns').select('id, title');
+        if (columns) {
+          const mapping: {[key: string]: string} = {};
+          columns.forEach(col => {
+            switch(col.title.toLowerCase()) {
+              case 'backlog':
+                mapping[col.id] = 'todo';
+                break;
+              case 'em progresso':
+                mapping[col.id] = 'in-progress';
+                break;
+              case 'em revisão':
+                mapping[col.id] = 'review';
+                break;
+              case 'concluído':
+                mapping[col.id] = 'done';
+                break;
+              default:
+                mapping[col.id] = 'todo';
+            }
+          });
+          setColumnMapping(mapping);
+          console.log('Column mapping loaded:', mapping);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar mapeamento de colunas:', error);
+      }
+    };
+
+    fetchColumnMapping();
+  }, []);
 
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
+    if (Object.keys(columnMapping).length === 0) return; // Esperar o mapeamento ser carregado
+
     const convertedCards: Card[] = supabaseCards.map((card) => ({
-      id: parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Date.now(), // Converter UUID para number
+      id: parseInt(card.id.replace(/-/g, '').substring(0, 8), 16) || Date.now(),
       title: card.title,
       description: card.description || "",
-      column: getColumnKey(card.column_id),
+      column: columnMapping[card.column_id || ''] || 'todo',
       priority: card.priority,
       assignee: {
         name: card.assignee?.name || "Não atribuído",
@@ -36,24 +75,11 @@ export function useKanbanCards() {
       projectId: card.project_id || 'sistema-ecommerce'
     }));
     
+    console.log('Cards convertidos:', convertedCards);
     setCards(convertedCards);
-  }, [supabaseCards]);
-
-  // Mapeamento de column_id para chaves do frontend
-  const getColumnKey = (columnId: string | null): string => {
-    if (!columnId) return 'todo';
-    // Mapear baseado no título das colunas
-    switch(columnId.toLowerCase()) {
-      case 'backlog': return 'todo';
-      case 'em progresso': return 'in-progress';
-      case 'em revisão': return 'review';
-      case 'concluído': return 'done';
-      default: return 'todo';
-    }
-  };
+  }, [supabaseCards, columnMapping]);
 
   const getColumnId = async (columnKey: string): Promise<string> => {
-    // Buscar o ID da coluna baseado no título
     const { data: columns } = await supabase.from('kanban_columns').select('id, title');
     if (!columns) return '';
     
@@ -81,7 +107,7 @@ export function useKanbanCards() {
         description: newCardData.description,
         column_id: columnId,
         project_id: newCardData.projectId,
-        assignee_id: null, // Será implementado quando tivermos seleção de usuários
+        assignee_id: null,
         priority: newCardData.priority,
         tags: newCardData.tags || [],
         dependencies: [],
