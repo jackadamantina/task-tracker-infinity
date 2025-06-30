@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Kanban, ChartGantt, BarChart, TrendingUp, Mail, Target, Settings } from "lucide-react";
@@ -19,9 +18,8 @@ import { TaskTrackerLogo } from "./TaskTrackerLogo";
 const menuItems = [
   { title: "Visão Geral", url: "/", icon: BarChart },
   { title: "Análise de Campanhas", url: "/usuarios", icon: TrendingUp },
-  { title: "Avaliador de Email", url: "/kanban", icon: Mail },
-  { title: "Testes A/B", url: "/testes", icon: Target },
-  { title: "Reputação RBL", url: "/relatorios", icon: ChartGantt },
+  { title: "Board Kanban", url: "/kanban", icon: Kanban },
+  { title: "Relatório", url: "/relatorios", icon: ChartGantt },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
