@@ -3,6 +3,7 @@ import { useState } from "react";
 import { DndContext, DragEndEvent, DragOverEvent, closestCorners } from '@dnd-kit/core';
 import { KanbanHeader } from "@/components/kanban/KanbanHeader";
 import { DroppableKanbanColumn } from "@/components/kanban/DroppableKanbanColumn";
+import { CardEditModal } from "@/components/kanban/CardEditModal";
 import { 
   getCardsByColumn, 
   mockProjects, 
@@ -19,6 +20,8 @@ export default function Kanban() {
   const [newColumnName, setNewColumnName] = useState("");
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
   const [cards, setCards] = useState<Card[]>(mockCards);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [showCardModal, setShowCardModal] = useState(false);
 
   const handleAddColumn = () => {
     if (newColumnName.trim()) {
@@ -32,6 +35,19 @@ export default function Kanban() {
       setNewColumnName("");
       setShowColumnDialog(false);
     }
+  };
+
+  const handleCardDoubleClick = (card: Card) => {
+    setSelectedCard(card);
+    setShowCardModal(true);
+  };
+
+  const handleCardSave = (updatedCard: Card) => {
+    setCards(prevCards => 
+      prevCards.map(card => 
+        card.id === updatedCard.id ? updatedCard : card
+      )
+    );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -100,10 +116,21 @@ export default function Kanban() {
               key={column.id}
               column={column}
               cards={getCardsByColumn(cards, column.id)}
+              onCardDoubleClick={handleCardDoubleClick}
             />
           ))}
         </div>
       </DndContext>
+
+      <CardEditModal
+        card={selectedCard}
+        isOpen={showCardModal}
+        onClose={() => {
+          setShowCardModal(false);
+          setSelectedCard(null);
+        }}
+        onSave={handleCardSave}
+      />
     </div>
   );
 }

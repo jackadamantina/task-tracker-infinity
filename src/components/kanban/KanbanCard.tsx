@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,9 +20,10 @@ interface KanbanCardProps {
     tags?: string[];
     executionTime?: number;
   };
+  onDoubleClick?: () => void;
 }
 
-export function KanbanCard({ card }: KanbanCardProps) {
+export function KanbanCard({ card, onDoubleClick }: KanbanCardProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "Alta": return "bg-red-50 text-red-700 border-red-200";
@@ -43,7 +45,10 @@ export function KanbanCard({ card }: KanbanCardProps) {
   };
 
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-200 hover:border-gray-300">
+    <Card 
+      className="cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-200 hover:border-gray-300"
+      onDoubleClick={onDoubleClick}
+    >
       <CardContent className="p-4">
         <div className="space-y-3">
           {/* Header do card */}

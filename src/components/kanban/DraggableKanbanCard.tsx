@@ -20,9 +20,10 @@ interface Card {
 
 interface DraggableKanbanCardProps {
   card: Card;
+  onCardDoubleClick?: (card: Card) => void;
 }
 
-export function DraggableKanbanCard({ card }: DraggableKanbanCardProps) {
+export function DraggableKanbanCard({ card, onCardDoubleClick }: DraggableKanbanCardProps) {
   const {
     attributes,
     listeners,
@@ -38,6 +39,12 @@ export function DraggableKanbanCard({ card }: DraggableKanbanCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleDoubleClick = () => {
+    if (onCardDoubleClick) {
+      onCardDoubleClick(card);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -46,7 +53,7 @@ export function DraggableKanbanCard({ card }: DraggableKanbanCardProps) {
       {...listeners}
       className="cursor-grab active:cursor-grabbing"
     >
-      <KanbanCard card={card} />
+      <KanbanCard card={card} onDoubleClick={handleDoubleClick} />
     </div>
   );
 }
