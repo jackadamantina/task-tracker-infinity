@@ -36,32 +36,32 @@ export function AppSidebar() {
 
   const getNavCls = (isActiveRoute: boolean) =>
     isActiveRoute 
-      ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg shadow-yellow-400/30 font-semibold border-l-4 border-yellow-600" 
-      : "hover:bg-yellow-50 text-gray-700 hover:text-yellow-700 hover:border-l-4 hover:border-yellow-300 transition-all duration-200";
+      ? "gradient-primary text-white shadow-lg shadow-golden font-bold border-l-4 border-amber-800 transform scale-[1.02]" 
+      : "hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 text-gray-700 hover:text-amber-800 hover:border-l-4 hover:border-amber-400 hover:shadow-md transition-all duration-300 hover:transform hover:scale-[1.01]";
 
   return (
-    <Sidebar className="bg-white border-r border-yellow-200 shadow-lg">
-      <SidebarHeader className="border-b border-yellow-100 p-6 bg-gradient-to-br from-yellow-50 to-amber-50">
+    <Sidebar className="bg-white border-r-2 border-amber-200 shadow-xl shadow-golden">
+      <SidebarHeader className="border-b-2 border-amber-100 p-6 gradient-secondary">
         <TaskTrackerLogo collapsed={collapsed} />
       </SidebarHeader>
 
       <SidebarContent className="bg-white">
-        <SidebarGroup className="px-4 py-6">
-          <SidebarGroupLabel className="text-xs font-bold text-yellow-700 uppercase tracking-wider px-3 py-3 mb-2">
+        <SidebarGroup className="px-4 py-8">
+          <SidebarGroupLabel className="text-xs font-bold text-amber-800 uppercase tracking-widest px-3 py-4 mb-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
+            <SidebarMenu className="space-y-3">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${getNavCls(isActive)}`}
+                      className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 ${getNavCls(isActive)}`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="font-medium text-sm">{item.title}</span>}
+                      {!collapsed && <span className="font-semibold text-sm tracking-wide">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
