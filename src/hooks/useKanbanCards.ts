@@ -10,24 +10,44 @@ export function useKanbanCards() {
 
   // Converter dados do Supabase para o formato esperado pelo frontend
   useEffect(() => {
-    console.log('Converting Supabase cards to frontend format:', supabaseCards.length);
+    console.log('=== CONVERSÃO DE CARDS ===');
+    console.log('Cards do Supabase recebidos:', supabaseCards.length);
     
-    const convertedCards: Card[] = supabaseCards.map((supabaseCard) => {
-      // Converter UUID para ID numérico
-      const numericId = parseInt(supabaseCard.id.replace(/-/g, '').substring(0, 8), 16) || Math.floor(Math.random() * 1000000);
+    const convertedCards: Card[] = supabaseCards.map((supabaseCard, index) => {
+      console.log(`Convertendo card ${index + 1}:`, {
+        id: supabaseCard.id,
+        title: supabaseCard.title,
+        column_id: supabaseCard.column_id
+      });
       
-      // Mapear column_id para o formato esperado
+      // Converter UUID para ID numérico simples
+      const numericId = Math.abs(supabaseCard.id.split('-').join('').substring(0, 8).split('').reduce((a, b) => {
+        return ((a << 5) - a) + b.charCodeAt(0);
+      }, 0));
+      
+      // Mapear column_id para nome da coluna - usando lógica mais robusta
       let columnName = 'todo'; // default
       
-      // Mapeamento direto baseado nos IDs conhecidos das colunas
-      if (supabaseCard.column_id === 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0') {
-        columnName = 'todo';
-      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174001') {
-        columnName = 'in-progress';
-      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174002') {
-        columnName = 'review';
-      } else if (supabaseCard.column_id === '123e4567-e89b-12d3-a456-426614174003') {
-        columnName = 'done';
+      if (supabaseCard.column_id) {
+        // Mapear baseado nos UUIDs conhecidos das colunas
+        switch(supabaseCard.column_id) {
+          case 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0':
+            columnName = 'todo';
+            break;
+          case '123e4567-e89b-12d3-a456-426614174001':
+            columnName = 'in-progress';
+            break;
+          case '123e4567-e89b-12d3-a456-426614174002':
+            columnName = 'review';
+            break;
+          case '123e4567-e89b-12d3-a456-426614174003':
+            columnName = 'done';
+            break;
+          default:
+            // Se não reconhecer o UUID, usar 'todo' como padrão
+            columnName = 'todo';
+            console.log('UUID de coluna não reconhecido:', supabaseCard.column_id);
+        }
       }
       
       const convertedCard: Card = {
@@ -40,14 +60,14 @@ export function useKanbanCards() {
           name: supabaseCard.assignee?.name || "Não atribuído",
           avatar: supabaseCard.assignee?.avatar || "/placeholder.svg"
         },
-        attachments: supabaseCard.attachments,
+        attachments: supabaseCard.attachments || 0,
         subtasks: {
-          completed: supabaseCard.subtasks_completed,
-          total: supabaseCard.subtasks_total
+          completed: supabaseCard.subtasks_completed || 0,
+          total: supabaseCard.subtasks_total || 0
         },
         dependencies: [],
         blocked: false,
-        timeSpent: supabaseCard.time_spent,
+        timeSpent: supabaseCard.time_spent || 0,
         tags: supabaseCard.tags || [],
         startTime: supabaseCard.start_time ? new Date(supabaseCard.start_time) : undefined,
         completedTime: undefined,
@@ -56,16 +76,29 @@ export function useKanbanCards() {
         projectId: supabaseCard.project_id || 'sistema-ecommerce'
       };
       
+      console.log(`Card convertido ${index + 1}:`, {
+        id: convertedCard.id,
+        title: convertedCard.title,
+        column: convertedCard.column,
+        projectId: convertedCard.projectId
+      });
+      
       return convertedCard;
     });
     
-    console.log('Cards converted:', convertedCards.length);
+    console.log('=== RESULTADO DA CONVERSÃO ===');
+    console.log('Total de cards convertidos:', convertedCards.length);
+    convertedCards.forEach((card, index) => {
+      console.log(`Card ${index + 1}: ${card.title} (coluna: ${card.column}, projeto: ${card.projectId})`);
+    });
+    
     setCards(convertedCards);
   }, [supabaseCards]);
 
   const handleCreateCard = async (newCardData: Omit<Card, 'id'>) => {
     try {
-      console.log('Creating new card:', newCardData.title);
+      console.log('=== CRIANDO NOVO CARD ===');
+      console.log('Dados do card:', newCardData);
       
       // Mapear coluna para UUID
       let columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0'; // default para 'todo'
@@ -85,9 +118,13 @@ export function useKanbanCards() {
           break;
       }
       
+      console.log('Coluna mapeada:', newCardData.column, '->', columnId);
+      
       // Buscar um projeto válido
       const { data: projects } = await supabase.from('projects').select('id').limit(1);
       const projectId = projects && projects.length > 0 ? projects[0].id : null;
+      
+      console.log('Projeto selecionado:', projectId);
       
       const supabaseCardData = {
         title: newCardData.title,
@@ -106,11 +143,17 @@ export function useKanbanCards() {
         start_time: newCardData.startTime?.toISOString() || null
       };
 
+      console.log('Dados para Supabase:', supabaseCardData);
+      
       await createCard(supabaseCardData);
-      console.log('Card created successfully');
+      console.log('Card criado com sucesso no Supabase');
+      
+      // Forçar uma nova busca dos dados
+      await refetch();
+      console.log('Dados atualizados após criação do card');
       
     } catch (error) {
-      console.error('Error creating card:', error);
+      console.error('Erro ao criar card:', error);
       throw error;
     }
   };
@@ -149,7 +192,9 @@ export function useKanbanCards() {
 
       // Buscar o UUID original do card
       const originalCard = supabaseCards.find(card => {
-        const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16);
+        const numericId = Math.abs(card.id.split('-').join('').substring(0, 8).split('').reduce((a, b) => {
+          return ((a << 5) - a) + b.charCodeAt(0);
+        }, 0));
         return numericId === updatedCard.id;
       });
 
@@ -165,7 +210,9 @@ export function useKanbanCards() {
     try {
       // Buscar o UUID original do card
       const originalCard = supabaseCards.find(card => {
-        const numericId = parseInt(card.id.replace(/-/g, '').substring(0, 8), 16);
+        const numericId = Math.abs(card.id.split('-').join('').substring(0, 8).split('').reduce((a, b) => {
+          return ((a << 5) - a) + b.charCodeAt(0);
+        }, 0));
         return numericId === cardId;
       });
 
