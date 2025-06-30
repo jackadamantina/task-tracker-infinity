@@ -11,6 +11,9 @@ export interface Card {
   blocked: boolean;
   timeSpent: number;
   tags?: string[];
+  startTime?: Date;
+  completedTime?: Date;
+  executionTime?: number; // em horas
 }
 
 export interface Column {
@@ -33,6 +36,22 @@ export const defaultColumns: Column[] = [
   { id: "done", title: "Concluído", color: "bg-white border-gray-200", headerColor: "bg-gray-50" }
 ];
 
+export const getExecutionTime = (startTime?: Date, completedTime?: Date): number => {
+  if (!startTime || !completedTime) return 0;
+  const diffMs = completedTime.getTime() - startTime.getTime();
+  return Math.round(diffMs / (1000 * 60 * 60)); // converter para horas
+};
+
+export const shouldAutoProgress = (card: Card): boolean => {
+  return card.subtasks.total > 0 && card.subtasks.completed === card.subtasks.total;
+};
+
+export const getNextColumn = (currentColumn: string): string => {
+  const columnOrder = ["todo", "in-progress", "review", "done"];
+  const currentIndex = columnOrder.indexOf(currentColumn);
+  return currentIndex < columnOrder.length - 1 ? columnOrder[currentIndex + 1] : currentColumn;
+};
+
 export const mockCards: Card[] = [
   {
     id: 1,
@@ -46,7 +65,8 @@ export const mockCards: Card[] = [
     dependencies: [],
     blocked: false,
     timeSpent: 0,
-    tags: ["Backend", "Segurança"]
+    tags: ["Backend", "Segurança"],
+    executionTime: 0
   },
   {
     id: 2,
@@ -60,7 +80,9 @@ export const mockCards: Card[] = [
     dependencies: [],
     blocked: false,
     timeSpent: 8,
-    tags: ["Frontend", "Design"]
+    tags: ["Frontend", "Design"],
+    startTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 dias atrás
+    executionTime: 48
   },
   {
     id: 3,
@@ -70,11 +92,13 @@ export const mockCards: Card[] = [
     priority: "Alta",
     assignee: { name: "Pedro Costa", avatar: "/placeholder.svg" },
     attachments: 1,
-    subtasks: { completed: 4, total: 5 },
+    subtasks: { completed: 5, total: 5 },
     dependencies: [1],
-    blocked: true,
+    blocked: false,
     timeSpent: 16,
-    tags: ["Backend", "API"]
+    tags: ["Backend", "API"],
+    startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    executionTime: 72
   },
   {
     id: 4,
@@ -88,6 +112,9 @@ export const mockCards: Card[] = [
     dependencies: [],
     blocked: false,
     timeSpent: 12,
-    tags: ["QA", "Testes"]
+    tags: ["QA", "Testes"],
+    startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    completedTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    executionTime: 96
   }
 ];

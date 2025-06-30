@@ -1,9 +1,8 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Paperclip, Clock, ArrowRight, AlertTriangle } from "lucide-react";
+import { Paperclip, Clock, ArrowRight, AlertTriangle, Timer } from "lucide-react";
 
 interface KanbanCardProps {
   card: {
@@ -18,6 +17,7 @@ interface KanbanCardProps {
     blocked: boolean;
     timeSpent: number;
     tags?: string[];
+    executionTime?: number;
   };
 }
 
@@ -33,6 +33,13 @@ export function KanbanCard({ card }: KanbanCardProps) {
 
   const getSubtaskProgress = (completed: number, total: number) => {
     return total > 0 ? (completed / total) * 100 : 0;
+  };
+
+  const formatExecutionTime = (hours: number): string => {
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
   };
 
   return (
@@ -84,6 +91,16 @@ export function KanbanCard({ card }: KanbanCardProps) {
                 value={getSubtaskProgress(card.subtasks.completed, card.subtasks.total)} 
                 className="h-1.5 bg-gray-200"
               />
+            </div>
+          )}
+
+          {/* Tempo de execução */}
+          {card.executionTime && card.executionTime > 0 && (
+            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-md border border-purple-200">
+              <Timer className="h-3 w-3 text-purple-600" />
+              <span className="text-xs text-purple-700 font-medium">
+                Tempo de execução: {formatExecutionTime(card.executionTime)}
+              </span>
             </div>
           )}
 
