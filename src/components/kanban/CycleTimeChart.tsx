@@ -2,7 +2,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCardsByProject } from '@/utils/kanbanUtils';
-import { mockCards } from '@/utils/kanbanUtils';
+import { mockCards } from '@/data/mockCards';
 
 interface CycleTimeChartProps {
   projectId: string;
