@@ -45,7 +45,7 @@ export function AppSidebar() {
     <Sidebar className="bg-white border-r border-gray-200 shadow-sm">
       <SidebarHeader className="border-b border-gray-100 p-6 bg-white">
         <div className="flex flex-col items-start">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">ScoreBox Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Task Tracker Dashboard</h1>
           <p className="text-sm text-gray-500">Plataforma de Email Marketing</p>
         </div>
       </SidebarHeader>
