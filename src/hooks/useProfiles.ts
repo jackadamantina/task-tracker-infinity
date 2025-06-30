@@ -25,7 +25,14 @@ export function useProfiles() {
         .order('name');
 
       if (error) throw error;
-      setProfiles(data || []);
+      
+      // Converter dados do Supabase para o tipo esperado
+      const formattedProfiles: Profile[] = (data || []).map(profile => ({
+        ...profile,
+        permissions: Array.isArray(profile.permissions) ? profile.permissions : []
+      }));
+      
+      setProfiles(formattedProfiles);
     } catch (error) {
       console.error('Erro ao buscar perfis:', error);
       toast({
@@ -52,13 +59,19 @@ export function useProfiles() {
 
       if (error) throw error;
       
-      setProfiles(prev => [...prev, data]);
+      // Converter dados do Supabase para o tipo esperado
+      const formattedProfile: Profile = {
+        ...data,
+        permissions: Array.isArray(data.permissions) ? data.permissions : []
+      };
+      
+      setProfiles(prev => [...prev, formattedProfile]);
       toast({
         title: "Sucesso",
         description: "Perfil criado com sucesso",
       });
       
-      return data;
+      return formattedProfile;
     } catch (error) {
       console.error('Erro ao criar perfil:', error);
       toast({

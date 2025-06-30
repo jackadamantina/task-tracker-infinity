@@ -5,10 +5,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X } from "lucide-react";
 import { Card } from "@/types/kanban";
 
+interface AvailableCard {
+  id: number;
+  title: string;
+  project: string;
+}
+
 interface DependenciesSectionProps {
   dependencies: number[];
   setDependencies: (deps: number[]) => void;
-  availableCards: Card[];
+  availableCards: AvailableCard[];
   currentCard: Card;
 }
 
@@ -42,7 +48,7 @@ export function DependenciesSection({
           return (
             <div key={depId} className="flex items-center gap-2 p-2 border rounded text-sm">
               <span className="flex-1">{depCard.title}</span>
-              <span className="text-xs text-gray-500">({depCard.projectId})</span>
+              <span className="text-xs text-gray-500">({depCard.project})</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -65,7 +71,7 @@ export function DependenciesSection({
               <SelectItem key={c.id} value={c.id.toString()}>
                 <div className="flex flex-col items-start">
                   <span>{c.title}</span>
-                  <span className="text-xs text-gray-500">Projeto: {c.projectId}</span>
+                  <span className="text-xs text-gray-500">Projeto: {c.project}</span>
                 </div>
               </SelectItem>
             ))}
