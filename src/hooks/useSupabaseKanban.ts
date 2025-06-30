@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,12 +49,16 @@ export function useSupabaseKanban() {
 
   const fetchColumns = async () => {
     try {
+      console.log('=== BUSCANDO COLUNAS ===');
       const { data, error } = await supabase
         .from('kanban_columns')
         .select('*')
         .order('position');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar colunas:', error);
+        throw error;
+      }
       console.log('Colunas carregadas:', data);
       setColumns(data || []);
     } catch (error) {
@@ -63,12 +68,16 @@ export function useSupabaseKanban() {
 
   const fetchProjects = async () => {
     try {
+      console.log('=== BUSCANDO PROJETOS ===');
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar projetos:', error);
+        throw error;
+      }
       console.log('Projetos carregados:', data);
       setProjects(data || []);
     } catch (error) {
@@ -78,6 +87,9 @@ export function useSupabaseKanban() {
 
   const fetchCards = async () => {
     try {
+      console.log('=== INICIANDO BUSCA DE CARDS ===');
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('kanban_cards')
         .select(`
@@ -87,21 +99,37 @@ export function useSupabaseKanban() {
         `)
         .order('created_at');
 
-      if (error) throw error;
+      console.log('=== RESULTADO DA QUERY ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
+
+      if (error) {
+        console.error('Erro na query:', error);
+        throw error;
+      }
       
-      const formattedCards = data?.map(card => ({
-        ...card,
-        assignee: card.system_users ? {
-          name: card.system_users.name,
-          avatar: card.system_users.avatar || "/placeholder.svg"
-        } : undefined,
-        project: card.projects
-      })) || [];
+      const formattedCards = data?.map(card => {
+        console.log('Formatando card:', card.id, card.title);
+        return {
+          ...card,
+          assignee: card.system_users ? {
+            name: card.system_users.name,
+            avatar: card.system_users.avatar || "/placeholder.svg"
+          } : undefined,
+          project: card.projects
+        };
+      }) || [];
       
-      console.log('Cards carregados:', formattedCards);
+      console.log('=== CARDS FORMATADOS ===');
+      console.log('Total de cards formatados:', formattedCards.length);
+      formattedCards.forEach(card => {
+        console.log(`Card: ${card.title} | Coluna: ${card.column_id} | Projeto: ${card.project_id}`);
+      });
+      
       setCards(formattedCards);
     } catch (error) {
-      console.error('Erro ao buscar cards:', error);
+      console.error('=== ERRO AO BUSCAR CARDS ===');
+      console.error('Erro:', error);
     } finally {
       setLoading(false);
     }
@@ -109,7 +137,8 @@ export function useSupabaseKanban() {
 
   const createCard = async (cardData: Omit<KanbanCard, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('Criando card no Supabase:', cardData);
+      console.log('=== CRIANDO CARD NO SUPABASE ===');
+      console.log('Dados recebidos:', cardData);
       
       const { data, error } = await supabase
         .from('kanban_cards')
@@ -122,9 +151,13 @@ export function useSupabaseKanban() {
         .single();
 
       if (error) {
-        console.error('Erro SQL:', error);
+        console.error('=== ERRO SQL AO CRIAR CARD ===');
+        console.error('Erro:', error);
         throw error;
       }
+
+      console.log('=== CARD CRIADO COM SUCESSO ===');
+      console.log('Card retornado:', data);
 
       const formattedCard = {
         ...data,
@@ -135,7 +168,12 @@ export function useSupabaseKanban() {
         project: data.projects
       };
 
-      setCards(prev => [...prev, formattedCard]);
+      console.log('=== ADICIONANDO CARD AO STATE ===');
+      setCards(prev => {
+        const newCards = [...prev, formattedCard];
+        console.log('Total de cards após adição:', newCards.length);
+        return newCards;
+      });
       
       toast({
         title: "Sucesso",
@@ -144,7 +182,8 @@ export function useSupabaseKanban() {
       
       return formattedCard;
     } catch (error) {
-      console.error('Erro ao criar card:', error);
+      console.error('=== ERRO AO CRIAR CARD ===');
+      console.error('Erro:', error);
       toast({
         title: "Erro",
         description: "Erro ao criar card",
@@ -222,11 +261,13 @@ export function useSupabaseKanban() {
 
   useEffect(() => {
     const initializeData = async () => {
+      console.log('=== INICIALIZANDO DADOS ===');
       await Promise.all([
         fetchColumns(),
         fetchProjects(),
         fetchCards()
       ]);
+      console.log('=== INICIALIZAÇÃO CONCLUÍDA ===');
     };
 
     initializeData();

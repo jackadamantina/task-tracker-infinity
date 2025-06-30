@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSupabaseKanban, KanbanCard } from "./useSupabaseKanban";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,10 +164,8 @@ export function useKanbanCards() {
       console.log('=== CARD CRIADO NO BANCO ===');
       console.log('Card criado:', createdCard);
       
-      // Forçar recarregamento imediato dos dados
-      console.log('=== FORÇANDO REFETCH ===');
-      await refetch();
-      console.log('=== REFETCH CONCLUÍDO ===');
+      // O card já foi adicionado ao state pelo createCard, não precisa fazer refetch
+      console.log('=== CRIAÇÃO CONCLUÍDA (sem refetch necessário) ===');
       
     } catch (error) {
       console.error('=== ERRO AO CRIAR CARD ===');
