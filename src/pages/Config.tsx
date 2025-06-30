@@ -306,13 +306,13 @@ const Config = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Gestão de Usuários</h2>
-              <p className="text-gray-600 mt-1">Gerencie usuários, perfis, grupos e análise de campanhas</p>
+              <p className="text-gray-600 mt-1">Gerencie usuários, perfis e grupos</p>
             </div>
           </div>
 
           {/* Sub-abas dentro de Usuários */}
           <Tabs value={userSubTab} onValueChange={setUserSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Usuários
@@ -324,10 +324,6 @@ const Config = () => {
               <TabsTrigger value="groups" className="flex items-center gap-2">
                 <Group className="h-4 w-4" />
                 Grupos
-              </TabsTrigger>
-              <TabsTrigger value="campaigns" className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Análise de Campanhas
               </TabsTrigger>
             </TabsList>
 
@@ -598,68 +594,6 @@ const Config = () => {
                   </Card>
                 ))}
               </div>
-            </TabsContent>
-
-            {/* Aba Análise de Campanhas */}
-            <TabsContent value="campaigns" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Leads</CardTitle>
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">3,680</div>
-                    <p className="text-xs text-muted-foreground">+15% em relação ao mês anterior</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Conversões</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">277</div>
-                    <p className="text-xs text-muted-foreground">+8% em relação ao mês anterior</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">ROI Médio</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">345%</div>
-                    <p className="text-xs text-muted-foreground">+22% em relação ao mês anterior</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance das Campanhas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {campaignData.map((campaign, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-semibold">{campaign.name}</h3>
-                          <p className="text-sm text-gray-600">{campaign.leads} leads gerados</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{campaign.conversions} conversões</p>
-                          <Badge variant="outline" className="bg-green-50 text-green-700">
-                            ROI: {campaign.roi}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </TabsContent>
