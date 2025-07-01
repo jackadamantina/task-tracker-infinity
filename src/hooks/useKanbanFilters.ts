@@ -9,18 +9,29 @@ export function useKanbanFilters(
   filterTeam: string,
   filterStatus: string
 ) {
-  console.log('=== FILTROS KANBAN ===');
-  console.log('Cards recebidos para filtrar:', cards.length);
+  console.log('=== FILTROS KANBAN DEBUG ===');
+  console.log('Cards recebidos:', cards.length);
   console.log('Projeto selecionado:', selectedProject);
-  console.log('Outros filtros:', { filterOverdue, filterPerson, filterTeam, filterStatus });
+  
+  // Primeiro, vamos mostrar todos os cards sem filtros para debug
+  console.log('Todos os cards disponíveis:');
+  cards.forEach((card, index) => {
+    console.log(`Card ${index + 1}: "${card.title}" - Projeto: "${card.projectId}" - Coluna: "${card.column}"`);
+  });
 
   const getCardsByProject = (cards: Card[], projectId: string): Card[] => {
+    console.log(`Filtrando por projeto: "${projectId}"`);
+    
     const filteredByProject = cards.filter(card => {
-      const match = card.projectId === projectId;
-      console.log(`Card "${card.title}" - Projeto: ${card.projectId} - Match com ${projectId}: ${match}`);
+      // Verificar se o projectId do card existe e corresponde
+      const cardProjectId = card.projectId || '';
+      const match = cardProjectId === projectId;
+      
+      console.log(`Card "${card.title}": projectId="${cardProjectId}" vs selectedProject="${projectId}" - Match: ${match}`);
       return match;
     });
-    console.log(`Cards filtrados por projeto (${projectId}):`, filteredByProject.length);
+    
+    console.log(`Resultado: ${filteredByProject.length} cards encontrados para projeto "${projectId}"`);
     return filteredByProject;
   };
 
@@ -33,41 +44,40 @@ export function useKanbanFilters(
     });
   };
 
-  // Filtrar cards por projeto
-  let filteredCards = getCardsByProject(cards, selectedProject);
-  console.log('Cards após filtro de projeto:', filteredCards.length);
+  // Aplicar filtros
+  let filteredCards = cards;
 
-  // Aplicar filtros adicionais
+  // Se não há projeto selecionado, mostrar todos os cards
+  if (selectedProject && selectedProject !== '') {
+    filteredCards = getCardsByProject(filteredCards, selectedProject);
+  }
+
   if (filterOverdue) {
     filteredCards = getOverdueCards(filteredCards);
-    console.log('Cards após filtro de atraso:', filteredCards.length);
   }
 
   if (filterPerson) {
     filteredCards = filteredCards.filter(card => 
       card.assignee.name === filterPerson
     );
-    console.log('Cards após filtro de pessoa:', filteredCards.length);
   }
 
   if (filterTeam) {
     filteredCards = filteredCards.filter(card => 
       card.tags?.includes(filterTeam)
     );
-    console.log('Cards após filtro de equipe:', filteredCards.length);
   }
 
   if (filterStatus) {
     filteredCards = filteredCards.filter(card => 
       card.column === filterStatus
     );
-    console.log('Cards após filtro de status:', filteredCards.length);
   }
 
   console.log('=== RESULTADO FINAL DOS FILTROS ===');
-  console.log('Cards finais:', filteredCards.length);
+  console.log(`Cards finais: ${filteredCards.length}`);
   filteredCards.forEach((card, index) => {
-    console.log(`Card final ${index + 1}: ${card.title} (coluna: ${card.column})`);
+    console.log(`Card final ${index + 1}: "${card.title}" (coluna: ${card.column}, projeto: ${card.projectId})`);
   });
 
   return filteredCards;

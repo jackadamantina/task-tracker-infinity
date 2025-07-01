@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSupabaseKanban, KanbanCard } from "./useSupabaseKanban";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,8 @@ export function useKanbanCards() {
       console.log(`Convertendo card ${index + 1}:`, {
         id: supabaseCard.id,
         title: supabaseCard.title,
-        column_id: supabaseCard.column_id
+        column_id: supabaseCard.column_id,
+        project_id: supabaseCard.project_id
       });
       
       // Converter UUID para ID numérico simples
@@ -25,29 +25,19 @@ export function useKanbanCards() {
         return ((a << 5) - a) + b.charCodeAt(0);
       }, 0));
       
-      // Mapear column_id para nome da coluna - usando lógica mais robusta
+      // Mapear column_id para nome da coluna - mapeamento direto
       let columnName = 'todo'; // default
       
       if (supabaseCard.column_id) {
-        // Mapear baseado nos UUIDs conhecidos das colunas
-        switch(supabaseCard.column_id) {
-          case 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0':
-            columnName = 'todo';
-            break;
-          case '123e4567-e89b-12d3-a456-426614174001':
-            columnName = 'in-progress';
-            break;
-          case '123e4567-e89b-12d3-a456-426614174002':
-            columnName = 'review';
-            break;
-          case '123e4567-e89b-12d3-a456-426614174003':
-            columnName = 'done';
-            break;
-          default:
-            // Se não reconhecer o UUID, usar 'todo' como padrão
-            columnName = 'todo';
-            console.log('UUID de coluna não reconhecido:', supabaseCard.column_id);
-        }
+        const columnMappings: { [key: string]: string } = {
+          'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0': 'todo',
+          '123e4567-e89b-12d3-a456-426614174001': 'in-progress',
+          '123e4567-e89b-12d3-a456-426614174002': 'review',
+          '123e4567-e89b-12d3-a456-426614174003': 'done'
+        };
+        
+        columnName = columnMappings[supabaseCard.column_id] || 'todo';
+        console.log(`Mapeando coluna ${supabaseCard.column_id} -> ${columnName}`);
       }
       
       const convertedCard: Card = {
@@ -89,7 +79,7 @@ export function useKanbanCards() {
     console.log('=== RESULTADO DA CONVERSÃO ===');
     console.log('Total de cards convertidos:', convertedCards.length);
     convertedCards.forEach((card, index) => {
-      console.log(`Card ${index + 1}: ${card.title} (coluna: ${card.column}, projeto: ${card.projectId})`);
+      console.log(`Card final ${index + 1}: ${card.title} (coluna: ${card.column}, projeto: ${card.projectId})`);
     });
     
     setCards(convertedCards);
@@ -101,23 +91,14 @@ export function useKanbanCards() {
       console.log('Dados do card:', newCardData);
       
       // Mapear coluna para UUID
-      let columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0'; // default para 'todo'
+      const columnMappings: { [key: string]: string } = {
+        'todo': 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0',
+        'in-progress': '123e4567-e89b-12d3-a456-426614174001',
+        'review': '123e4567-e89b-12d3-a456-426614174002',
+        'done': '123e4567-e89b-12d3-a456-426614174003'
+      };
       
-      switch(newCardData.column) {
-        case 'todo':
-          columnId = 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
-          break;
-        case 'in-progress':
-          columnId = '123e4567-e89b-12d3-a456-426614174001';
-          break;
-        case 'review':
-          columnId = '123e4567-e89b-12d3-a456-426614174002';
-          break;
-        case 'done':
-          columnId = '123e4567-e89b-12d3-a456-426614174003';
-          break;
-      }
-      
+      const columnId = columnMappings[newCardData.column] || 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
       console.log('Coluna mapeada:', newCardData.column, '->', columnId);
       
       // Buscar um projeto válido
