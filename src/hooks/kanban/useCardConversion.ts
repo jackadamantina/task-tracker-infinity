@@ -37,6 +37,22 @@ export function useCardConversion(supabaseCards: KanbanCard[]) {
       });
     }
     
+    // CORRIGIR: Mapear project_id para o nome do projeto esperado
+    let projectId = 'sistema-ecommerce'; // default padrão
+    
+    if (supabaseCard.project_id) {
+      const projectMappings: { [key: string]: string } = {
+        '1b4f6a35-e278-452e-8590-1ae38fced91b': 'sistema-ecommerce'
+      };
+      
+      projectId = projectMappings[supabaseCard.project_id] || 'sistema-ecommerce';
+      console.log('🎯 Mapeamento de projeto:', {
+        project_id: supabaseCard.project_id,
+        projectId: projectId,
+        found: !!projectMappings[supabaseCard.project_id]
+      });
+    }
+    
     const convertedCard = {
       id: numericId,
       title: supabaseCard.title,
@@ -60,7 +76,7 @@ export function useCardConversion(supabaseCards: KanbanCard[]) {
       completedTime: undefined,
       executionTime: 0,
       estimatedCompletionDate: supabaseCard.estimated_completion_date ? new Date(supabaseCard.estimated_completion_date) : undefined,
-      projectId: supabaseCard.project_id || 'sistema-ecommerce'
+      projectId: projectId  // Usando o projectId mapeado
     };
     
     console.log('✅ Card convertido:', {

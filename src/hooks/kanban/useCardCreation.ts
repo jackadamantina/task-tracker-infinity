@@ -23,11 +23,21 @@ export function useCardCreation(
       const columnId = columnMappings[newCardData.column] || 'e04ac9f2-b9fd-4f1c-b82d-e31f5527f6a0';
       console.log('Coluna mapeada:', newCardData.column, '->', columnId);
       
-      // Buscar um projeto válido
-      const { data: projects } = await supabase.from('projects').select('id').limit(1);
-      const projectId = projects && projects.length > 0 ? projects[0].id : null;
+      // CORRIGIR: Mapear o nome do projeto para UUID
+      const projectMappings: { [key: string]: string } = {
+        'sistema-ecommerce': '1b4f6a35-e278-452e-8590-1ae38fced91b'
+      };
       
-      console.log('Projeto selecionado:', projectId);
+      let projectId = projectMappings[newCardData.projectId] || null;
+      
+      // Se não encontrar o mapeamento, buscar um projeto válido no banco
+      if (!projectId) {
+        console.log('🔍 Mapeamento de projeto não encontrado, buscando no banco...');
+        const { data: projects } = await supabase.from('projects').select('id').limit(1);
+        projectId = projects && projects.length > 0 ? projects[0].id : null;
+      }
+      
+      console.log('Projeto mapeado:', newCardData.projectId, '->', projectId);
       
       const supabaseCardData = {
         title: newCardData.title,
