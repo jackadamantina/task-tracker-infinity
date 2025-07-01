@@ -4,10 +4,19 @@ import { Card } from "@/types/kanban";
 
 export function useCardConversion(supabaseCards: KanbanCard[]) {
   const convertSupabaseCardToCard = (supabaseCard: KanbanCard): Card => {
+    console.log('🔄 Convertendo card do Supabase:', {
+      id: supabaseCard.id,
+      title: supabaseCard.title,
+      column_id: supabaseCard.column_id,
+      project_id: supabaseCard.project_id
+    });
+    
     // Converter UUID para ID numérico simples
     const numericId = Math.abs(supabaseCard.id.split('-').join('').substring(0, 8).split('').reduce((a, b) => {
       return ((a << 5) - a) + b.charCodeAt(0);
     }, 0));
+    
+    console.log('🆔 ID numérico gerado:', numericId);
     
     // Mapear column_id para nome da coluna
     let columnName = 'todo'; // default
@@ -21,9 +30,14 @@ export function useCardConversion(supabaseCards: KanbanCard[]) {
       };
       
       columnName = columnMappings[supabaseCard.column_id] || 'todo';
+      console.log('📍 Mapeamento de coluna:', {
+        column_id: supabaseCard.column_id,
+        columnName: columnName,
+        found: !!columnMappings[supabaseCard.column_id]
+      });
     }
     
-    return {
+    const convertedCard = {
       id: numericId,
       title: supabaseCard.title,
       description: supabaseCard.description || "",
@@ -48,36 +62,40 @@ export function useCardConversion(supabaseCards: KanbanCard[]) {
       estimatedCompletionDate: supabaseCard.estimated_completion_date ? new Date(supabaseCard.estimated_completion_date) : undefined,
       projectId: supabaseCard.project_id || 'sistema-ecommerce'
     };
+    
+    console.log('✅ Card convertido:', {
+      id: convertedCard.id,
+      title: convertedCard.title,
+      column: convertedCard.column,
+      projectId: convertedCard.projectId
+    });
+    
+    return convertedCard;
   };
 
   const convertCards = (cards: KanbanCard[]): Card[] => {
-    console.log('=== CONVERSÃO DE CARDS ===');
-    console.log('Cards do Supabase recebidos:', cards.length);
+    console.log('=== CONVERSÃO DE CARDS DEBUG ===');
+    console.log('📥 Cards do Supabase recebidos para conversão:', cards.length);
+    
+    if (cards.length === 0) {
+      console.log('⚠️ Nenhum card recebido para conversão!');
+      return [];
+    }
     
     const convertedCards = cards.map((supabaseCard, index) => {
-      console.log(`Convertendo card ${index + 1}:`, {
-        id: supabaseCard.id,
-        title: supabaseCard.title,
-        column_id: supabaseCard.column_id,
-        project_id: supabaseCard.project_id
-      });
-      
-      const convertedCard = convertSupabaseCardToCard(supabaseCard);
-      
-      console.log(`Card convertido ${index + 1}:`, {
-        id: convertedCard.id,
-        title: convertedCard.title,
-        column: convertedCard.column,
-        projectId: convertedCard.projectId
-      });
-      
-      return convertedCard;
+      console.log(`🔄 Convertendo card ${index + 1}/${cards.length}:`);
+      return convertSupabaseCardToCard(supabaseCard);
     });
     
-    console.log('=== RESULTADO DA CONVERSÃO ===');
-    console.log('Total de cards convertidos:', convertedCards.length);
-    convertedCards.forEach((card, index) => {
-      console.log(`Card final ${index + 1}: ${card.title} (coluna: ${card.column}, projeto: ${card.projectId})`);
+    console.log('✅ Conversão concluída:', {
+      entrada: cards.length,
+      saida: convertedCards.length,
+      cards: convertedCards.map(card => ({
+        id: card.id,
+        title: card.title,
+        column: card.column,
+        projectId: card.projectId
+      }))
     });
     
     return convertedCards;
